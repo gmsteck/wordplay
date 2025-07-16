@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:sample/widgets/initial_page.dart';
 import 'package:sample/widgets/wordle.dart';
 import 'widgets/game_list.dart';
 import 'widgets/login.dart';
@@ -17,7 +18,7 @@ class _AppState extends State<App> {
   late Auth0 auth0;
   late CredentialsManager credentialsManager;
   UserProfile? _user;
-  bool _loading = true;
+  final bool _loading = true;
 
   @override
   void initState() {
@@ -57,9 +58,10 @@ class _AppState extends State<App> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(), // or your custom theme
-      initialRoute:
-          //_loading ? '/loading' : (_user != null ? '/gameList' : '/login'),
-          '/login',
+      home: InitialPage(
+        auth0: auth0,
+        credentialsManager: credentialsManager,
+      ),
       routes: {
         '/loading': (context) => const Scaffold(
               body: Center(child: CircularProgressIndicator()),
