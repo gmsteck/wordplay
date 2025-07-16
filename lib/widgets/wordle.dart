@@ -12,8 +12,10 @@ class _WordlePageState extends State<WordlePage> {
   final int maxAttempts = 6;
   final int wordLength = 5;
   final String secretWord = 'CRANE'; // <-- make this dynamic later
+  bool gameOver = false;
   List<String> guesses = [];
   String currentGuess = '';
+  Map<String, String> letterStatus = {}; // e.g., {'A': 'green', 'B': 'grey'}
 
   void onKeyPressed(String letter) {
     if (currentGuess.length < wordLength) {
@@ -32,30 +34,138 @@ class _WordlePageState extends State<WordlePage> {
   }
 
   void onSubmit() {
-    if (currentGuess.length != wordLength) return;
+    if (currentGuess.length != wordLength || gameOver) return;
 
     setState(() {
       guesses.add(currentGuess);
+    });
+
+    if (currentGuess.toUpperCase() == secretWord) {
+      setState(() {
+        gameOver = true;
+      });
+
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('🎉 You guessed it!'),
+            content: Text('The word was "$secretWord".'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      });
+    } else if (guesses.length >= maxAttempts) {
+      setState(() {
+        gameOver = true;
+      });
+
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Game Over 😞'),
+            content: Text('The word was "$secretWord".'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      });
+    }
+
+    updateLetterStatus(currentGuess);
+
+    setState(() {
       currentGuess = '';
     });
   }
 
-  Color getBoxColor(String letter, int position, String guess) {
-    if (secretWord[position] == letter) {
-      return Colors.green;
-    } else if (secretWord.contains(letter)) {
-      return Colors.yellow[700]!;
-    } else {
-      return Colors.white;
+  List<Color> evaluateGuess(String guess) {
+    final guessLetters = guess.split('');
+    final secretLetters = secretWord.split('');
+    final colors = List<Color>.filled(wordLength, Colors.white);
+    final letterCounts = <String, int>{};
+
+    // Count each letter in the secret word
+    for (var letter in secretLetters) {
+      letterCounts[letter] = (letterCounts[letter] ?? 0) + 1;
+    }
+
+    // First pass: check for correct positions (green)
+    for (int i = 0; i < wordLength; i++) {
+      if (guessLetters[i] == secretLetters[i]) {
+        colors[i] = Colors.green;
+        letterCounts[guessLetters[i]] = letterCounts[guessLetters[i]]! - 1;
+      }
+    }
+
+    // Second pass: check for correct letters in wrong positions (yellow)
+    for (int i = 0; i < wordLength; i++) {
+      if (colors[i] != Colors.white) continue; // already marked green
+
+      final letter = guessLetters[i];
+      if (letterCounts.containsKey(letter) && letterCounts[letter]! > 0) {
+        colors[i] = Colors.yellow[700]!;
+        letterCounts[letter] = letterCounts[letter]! - 1;
+      }
+    }
+
+    return colors;
+  }
+
+  void updateLetterStatus(String guess) {
+    final tempSecret = secretWord.split('');
+    final guessLetters = guess.split('');
+
+    // Step 1: Mark green letters first
+    for (int i = 0; i < wordLength; i++) {
+      final gLetter = guessLetters[i];
+      if (gLetter == tempSecret[i]) {
+        letterStatus[gLetter] = 'green';
+        tempSecret[i] = ''; // Mark as matched
+        guessLetters[i] = ''; // Prevent from reprocessing
+      }
+    }
+
+    // Step 2: Mark yellow and grey
+    for (int i = 0; i < wordLength; i++) {
+      final gLetter = guessLetters[i];
+      if (gLetter == '') continue;
+
+      if (tempSecret.contains(gLetter)) {
+        // Only upgrade to yellow if not already green
+        if (letterStatus[gLetter] != 'green') {
+          letterStatus[gLetter] = 'yellow';
+        }
+        tempSecret[tempSecret.indexOf(gLetter)] = ''; // mark as used
+      } else {
+        // Only downgrade to grey if not already yellow or green
+        if (!letterStatus.containsKey(gLetter)) {
+          letterStatus[gLetter] = 'grey';
+        }
+      }
     }
   }
 
   Widget buildGuessRow(String guess) {
+    final colors = evaluateGuess(guess);
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(wordLength, (index) {
         final letter = guess[index];
-        final color = getBoxColor(letter, index, guess);
+        final color = colors[index];
 
         return Container(
           margin: const EdgeInsets.all(4),
@@ -127,9 +237,24 @@ class _WordlePageState extends State<WordlePage> {
                     width: keySize,
                     height: keySize,
                     child: ElevatedButton(
-                      onPressed: () => onKeyPressed(letter),
+                      onPressed: letterStatus[letter] == 'grey'
+                          ? null
+                          : () => onKeyPressed(letter),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
+                        backgroundColor: () {
+                          final status = letterStatus[letter];
+                          switch (status) {
+                            case 'green':
+                              return Colors.green;
+                            case 'yellow':
+                              return Colors.yellow[700];
+                            case 'grey':
+                              return Colors.grey[700];
+                            default:
+                              return Colors.white;
+                          }
+                        }(),
+                        foregroundColor: Colors.black,
                         padding: EdgeInsets.zero,
                       ),
                       child: Text(
