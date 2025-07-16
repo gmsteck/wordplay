@@ -83,9 +83,9 @@ class _LoginPageState extends State<LoginPage> {
               Center(
                 child: FittedBox(
                   child: Text(
-                    'Word Games with Friends',
+                    'WordPlay',
                     style: TextStyle(
-                      fontSize: 48,
+                      fontSize: 64,
                       fontWeight: FontWeight.bold,
                       foreground: Paint()
                         ..shader = LinearGradient(
