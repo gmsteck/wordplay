@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sample/helper/gradient_app_bar.dart';
+import 'package:sample/services/word_list_service.dart';
+import 'package:sample/widgets/shake_widget.dart';
 
 class WordlePage extends StatefulWidget {
   const WordlePage({super.key});
@@ -9,6 +11,7 @@ class WordlePage extends StatefulWidget {
 }
 
 class _WordlePageState extends State<WordlePage> {
+  late GlobalKey<ShakeWidgetState> shakeKey;
   final int maxAttempts = 6;
   final int wordLength = 5;
   final String secretWord = 'CRANE'; // <-- make this dynamic later
@@ -16,6 +19,12 @@ class _WordlePageState extends State<WordlePage> {
   List<String> guesses = [];
   String currentGuess = '';
   Map<String, String> letterStatus = {}; // e.g., {'A': 'green', 'B': 'grey'}
+
+  @override
+  void initState() {
+    super.initState();
+    shakeKey = GlobalKey<ShakeWidgetState>();
+  }
 
   void onKeyPressed(String letter) {
     if (currentGuess.length < wordLength) {
@@ -35,6 +44,12 @@ class _WordlePageState extends State<WordlePage> {
 
   void onSubmit() {
     if (currentGuess.length != wordLength || gameOver) return;
+
+    if (!validWords.contains(currentGuess.toUpperCase())) {
+      shakeKey.currentState?.shake();
+      print('Invalid word');
+      return;
+    }
 
     setState(() {
       guesses.add(currentGuess);
@@ -190,30 +205,33 @@ class _WordlePageState extends State<WordlePage> {
   }
 
   Widget buildEmptyRow() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(wordLength, (index) {
-        final letter = index < currentGuess.length ? currentGuess[index] : '';
-        return Container(
-          margin: const EdgeInsets.all(4),
-          width: 48,
-          height: 48,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: Colors.grey[700]!),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Text(
-            letter,
-            style: const TextStyle(
-              fontSize: 24,
-              color: Colors.black,
-              fontWeight: FontWeight.bold,
+    return ShakeWidget(
+      key: shakeKey,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(wordLength, (index) {
+          final letter = index < currentGuess.length ? currentGuess[index] : '';
+          return Container(
+            margin: const EdgeInsets.all(4),
+            width: 48,
+            height: 48,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: Colors.grey[700]!),
+              borderRadius: BorderRadius.circular(6),
             ),
-          ),
-        );
-      }),
+            child: Text(
+              letter,
+              style: const TextStyle(
+                fontSize: 24,
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          );
+        }),
+      ),
     );
   }
 
@@ -293,15 +311,30 @@ class _WordlePageState extends State<WordlePage> {
                 height: keySize,
                 child: ElevatedButton(
                   onPressed: onSubmit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    padding: EdgeInsets.zero,
+                  style: ButtonStyle(
+                    backgroundColor: WidgetStateProperty.resolveWith<Color>(
+                      (Set<WidgetState> states) {
+                        if (states.contains(WidgetState.pressed)) {
+                          return Colors
+                              .green.shade800; // Darker green when pressed
+                        }
+                        return Colors.green; // Default green
+                      },
+                    ),
+                    elevation: WidgetStateProperty.resolveWith<double>(
+                      (Set<WidgetState> states) {
+                        if (states.contains(WidgetState.pressed)) {
+                          return 0; // Flat when pressed
+                        }
+                        return 4; // Normal elevation
+                      },
+                    ),
+                    padding: WidgetStateProperty.all(EdgeInsets.zero),
                   ),
                   child: const Text(
                     'Enter',
                     style: TextStyle(
-                      color:
-                          Colors.white, // 👈 Change this to any color you want
+                      color: Colors.white,
                     ),
                   ),
                 ),
