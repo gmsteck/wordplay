@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sample/helper/gradient_app_bar.dart';
 import 'package:sample/services/word_list_service.dart';
 import 'package:sample/widgets/shake_widget.dart';
+import 'dart:math';
 
 class WordlePage extends StatefulWidget {
   const WordlePage({super.key});
@@ -14,7 +15,8 @@ class _WordlePageState extends State<WordlePage> {
   late GlobalKey<ShakeWidgetState> shakeKey;
   final int maxAttempts = 6;
   final int wordLength = 5;
-  final String secretWord = 'CRANE'; // <-- make this dynamic later
+  final String secretWord = validWords.toList()[
+      Random().nextInt(validWords.length)]; // <-- make this dynamic later
   bool gameOver = false;
   List<String> guesses = [];
   String currentGuess = '';
@@ -255,9 +257,7 @@ class _WordlePageState extends State<WordlePage> {
                     width: keySize,
                     height: keySize,
                     child: ElevatedButton(
-                      onPressed: letterStatus[letter] == 'grey'
-                          ? null
-                          : () => onKeyPressed(letter),
+                      onPressed: () => onKeyPressed(letter),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: () {
                           final status = letterStatus[letter];
@@ -267,7 +267,7 @@ class _WordlePageState extends State<WordlePage> {
                             case 'yellow':
                               return Colors.yellow[700];
                             case 'grey':
-                              return Colors.grey[700];
+                              return Colors.grey[500];
                             default:
                               return Colors.white;
                           }
