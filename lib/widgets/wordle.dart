@@ -297,7 +297,13 @@ class _WordlePageState extends State<WordlePage> {
                     backgroundColor: Colors.green,
                     padding: EdgeInsets.zero,
                   ),
-                  child: const Text('Enter'),
+                  child: const Text(
+                    'Enter',
+                    style: TextStyle(
+                      color:
+                          Colors.white, // 👈 Change this to any color you want
+                    ),
+                  ),
                 ),
               ),
             ],
