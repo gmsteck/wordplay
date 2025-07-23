@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:sample/service/auth_service.dart';
 import 'login.dart';
 
 class InitialPage extends StatelessWidget {
-  final AuthService authService;
-
-  const InitialPage({super.key, required this.authService});
+  const InitialPage({super.key});
 
   @override
   Widget build(BuildContext context) {

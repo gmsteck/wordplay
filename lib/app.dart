@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:sample/controller/auth_controller.dart';
 import 'package:sample/service/auth_service.dart';
 import 'package:sample/widgets/initial_page.dart';
 import 'package:sample/widgets/wordle.dart';
@@ -63,34 +62,18 @@ class _AppState extends State<App> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(), // or your custom theme
-      home: InitialPage(
-        authService: authService,
-      ),
+      home: InitialPage(),
       routes: {
         '/loading': (context) => const Scaffold(
               body: Center(child: CircularProgressIndicator()),
             ),
         '/login': (context) => LoginPage(),
         '/gameList': (context) {
-          final args = ModalRoute.of(context)!.settings.arguments
-              as Map<String, dynamic>;
-          return GameListPage(
-            auth0: args['auth0'],
-            credentialsManager: args['credentialsManager'],
-            authController: AuthController(authService),
-            user: args['user'],
-          );
+          return GameListPage();
         },
         '/wordle': (context) => const WordlePage(),
         '/user': (context) {
-          final args = ModalRoute.of(context)!.settings.arguments
-              as Map<String, dynamic>;
-          return UserPage(
-            auth0: args['auth0'],
-            credentialsManager: args['credentialsManager'],
-            authController: AuthController(authService),
-            user: args['user'],
-          );
+          return UserPage();
         },
       },
     );
