@@ -34,7 +34,6 @@ class AuthController extends StateNotifier<AuthState> {
   Future<void> logout(BuildContext context) async {
     try {
       await authService.logout();
-      state = const AuthState();
       if (context.mounted) {
         Navigator.of(context).pushReplacementNamed('/login');
       }

@@ -12,12 +12,6 @@ class UserPage extends ConsumerWidget {
 
     // Trigger navigation after the build is done if user is null
     if (user == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (context.mounted) {
-          Navigator.pushReplacementNamed(context, '/login');
-        }
-      });
-
       return const Scaffold(
         backgroundColor: Colors.white,
         body: SizedBox(),
