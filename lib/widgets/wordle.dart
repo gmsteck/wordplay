@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:sample/helper/gradient_app_bar.dart';
-import 'package:sample/services/word_list_service.dart';
+import 'package:sample/common/gradient_app_bar.dart';
+import 'package:sample/service/word_list_service.dart';
 import 'package:sample/widgets/shake_widget.dart';
 import 'dart:math';
 

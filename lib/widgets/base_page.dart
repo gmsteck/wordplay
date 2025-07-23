@@ -1,15 +1,17 @@
 // lib/widgets/base_page.dart
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart';
-import '../helper/theme.dart';
-import 'login.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sample/model/user_model.dart';
+import 'package:sample/provider/auth_provider.dart';
+import '../common/theme.dart';
 import 'wordle.dart';
-import '../helper/gradient_app_bar.dart';
+import '../common/gradient_app_bar.dart';
 
-class BasePage extends StatefulWidget {
+class BasePage extends ConsumerStatefulWidget {
   final Auth0 auth0;
   final CredentialsManager credentialsManager;
-  final UserProfile user;
+  final UserModel user;
   final String title;
   final Widget child;
   final bool showBottomNav;
@@ -25,18 +27,17 @@ class BasePage extends StatefulWidget {
   });
 
   @override
-  State<BasePage> createState() => _BasePageState();
+  ConsumerState<BasePage> createState() => _BasePageState();
 }
 
-class _BasePageState extends State<BasePage> {
+class _BasePageState extends ConsumerState<BasePage> {
   bool _isLoggingOut = false;
 
   Future<void> _logout() async {
     setState(() => _isLoggingOut = true);
     try {
-      // await widget.auth0
-      //     .webAuthentication(scheme: dotenv.env['AUTH0_CUSTOM_SCHEME']!)
-      //     .logout();
+      final authController = ref.read(authControllerProvider);
+      await authController.logout();
       await widget.credentialsManager.clearCredentials();
     } catch (e) {
       print('Logout error: $e');
@@ -44,14 +45,7 @@ class _BasePageState extends State<BasePage> {
 
     if (!mounted) return;
 
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => LoginPage(
-          auth0: widget.auth0,
-          credentialsManager: widget.credentialsManager,
-        ),
-      ),
-    );
+    Navigator.of(context).pushReplacementNamed('/login');
   }
 
   void _goToGameListPage() {
@@ -91,6 +85,7 @@ class _BasePageState extends State<BasePage> {
 
   @override
   Widget build(BuildContext context) {
+    // Optional: could use `ref.watch(authControllerProvider)` here for reactive UI if needed
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: GradientAppBar(

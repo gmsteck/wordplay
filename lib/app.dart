@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:sample/controller/auth_controller.dart';
+import 'package:sample/service/auth_service.dart';
 import 'package:sample/widgets/initial_page.dart';
 import 'package:sample/widgets/wordle.dart';
 import 'widgets/game_list.dart';
@@ -17,6 +19,7 @@ class App extends StatefulWidget {
 class _AppState extends State<App> {
   late Auth0 auth0;
   late CredentialsManager credentialsManager;
+  late AuthService authService;
   UserProfile? _user;
   final bool _loading = true;
 
@@ -25,6 +28,8 @@ class _AppState extends State<App> {
     super.initState();
     auth0 = Auth0(dotenv.env['AUTH0_DOMAIN']!, dotenv.env['AUTH0_CLIENT_ID']!);
     credentialsManager = auth0.credentialsManager;
+    authService =
+        AuthService(auth0: auth0, credentialsManager: credentialsManager);
 
     // _tryRestoreSession();
   }
@@ -59,23 +64,20 @@ class _AppState extends State<App> {
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(), // or your custom theme
       home: InitialPage(
-        auth0: auth0,
-        credentialsManager: credentialsManager,
+        authService: authService,
       ),
       routes: {
         '/loading': (context) => const Scaffold(
               body: Center(child: CircularProgressIndicator()),
             ),
-        '/login': (context) => LoginPage(
-              auth0: auth0,
-              credentialsManager: credentialsManager,
-            ),
+        '/login': (context) => LoginPage(),
         '/gameList': (context) {
           final args = ModalRoute.of(context)!.settings.arguments
               as Map<String, dynamic>;
           return GameListPage(
             auth0: args['auth0'],
             credentialsManager: args['credentialsManager'],
+            authController: AuthController(authService),
             user: args['user'],
           );
         },
@@ -86,6 +88,7 @@ class _AppState extends State<App> {
           return UserPage(
             auth0: args['auth0'],
             credentialsManager: args['credentialsManager'],
+            authController: AuthController(authService),
             user: args['user'],
           );
         },

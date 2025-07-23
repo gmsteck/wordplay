@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart';
+import 'package:sample/controller/auth_controller.dart';
+import 'package:sample/model/user_model.dart';
 import 'base_page.dart';
 
 class UserPage extends StatefulWidget {
   final Auth0 auth0;
   final CredentialsManager credentialsManager;
-  final UserProfile user;
+  final AuthController authController;
+  final UserModel user;
 
   const UserPage({
     super.key,
     required this.auth0,
     required this.credentialsManager,
+    required this.authController,
     required this.user,
   });
 
@@ -50,14 +54,13 @@ class _UserPageState extends State<UserPage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            if (user.pictureUrl != null)
-              Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                child: CircleAvatar(
-                  radius: 56,
-                  backgroundImage: NetworkImage(user.pictureUrl!.toString()),
-                ),
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              child: CircleAvatar(
+                radius: 56,
+                backgroundImage: NetworkImage(user.pictureUrl.toString()),
               ),
+            ),
             Card(
               color: Colors.white,
               elevation: 4,
@@ -66,11 +69,11 @@ class _UserPageState extends State<UserPage> {
               ),
               child: Column(
                 children: [
-                  _userEntry('ID', user.sub),
+                  _userEntry('ID', user.id),
                   _userEntry('Name', user.name),
                   _userEntry('Email', user.email),
-                  _userEntry('Email Verified', user.isEmailVerified.toString()),
-                  _userEntry('Updated At', user.updatedAt?.toIso8601String()),
+                  _userEntry('Email Verified', user.emailVerified.toString()),
+                  _userEntry('Updated At', user.lastUpdated.toIso8601String()),
                 ],
               ),
             ),
