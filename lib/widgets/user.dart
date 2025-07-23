@@ -1,54 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:auth0_flutter/auth0_flutter.dart';
-import 'package:sample/controller/auth_controller.dart';
-import 'package:sample/model/user_model.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sample/provider/auth_provider.dart';
 import 'base_page.dart';
 
-class UserPage extends StatefulWidget {
-  final Auth0 auth0;
-  final CredentialsManager credentialsManager;
-  final AuthController authController;
-  final UserModel user;
-
-  const UserPage({
-    super.key,
-    required this.auth0,
-    required this.credentialsManager,
-    required this.authController,
-    required this.user,
-  });
+class UserPage extends ConsumerWidget {
+  const UserPage({super.key});
 
   @override
-  State<UserPage> createState() => _UserPageState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authControllerProvider).user;
 
-class _UserPageState extends State<UserPage> {
-  Widget _userEntry(String label, String? value) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      margin: const EdgeInsets.symmetric(vertical: 2),
-      color: Colors.white,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(color: Colors.black)),
-          Flexible(
-            child:
-                Text(value ?? '', style: const TextStyle(color: Colors.black)),
-          ),
-        ],
-      ),
-    );
-  }
+    // Trigger navigation after the build is done if user is null
+    if (user == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          Navigator.pushReplacementNamed(context, '/login');
+        }
+      });
 
-  @override
-  Widget build(BuildContext context) {
-    final user = widget.user;
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: SizedBox(),
+      );
+    }
 
     return BasePage(
-      auth0: widget.auth0,
-      credentialsManager: widget.credentialsManager,
-      user: user,
       title: 'User Info',
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -79,6 +55,24 @@ class _UserPageState extends State<UserPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _userEntry(String label, String? value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: const EdgeInsets.symmetric(vertical: 2),
+      color: Colors.white,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.black)),
+          Flexible(
+            child:
+                Text(value ?? '', style: const TextStyle(color: Colors.black)),
+          ),
+        ],
       ),
     );
   }

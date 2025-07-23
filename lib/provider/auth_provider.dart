@@ -2,6 +2,7 @@
 import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:sample/model/auth_state.dart';
 import '../controller/auth_controller.dart';
 import '../service/auth_service.dart';
 
@@ -14,7 +15,8 @@ final authServiceProvider = Provider<AuthService>((ref) {
       credentialsManager: credentialsManager); // optionally pass config
 });
 
-final authControllerProvider = Provider<AuthController>((ref) {
+final authControllerProvider =
+    StateNotifierProvider<AuthController, AuthState>((ref) {
   final authService = ref.watch(authServiceProvider);
   return AuthController(authService);
 });
