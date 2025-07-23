@@ -1,26 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:auth0_flutter/auth0_flutter.dart';
+import 'package:sample/service/auth_service.dart';
 import 'login.dart';
 
 class InitialPage extends StatelessWidget {
-  final Auth0 auth0;
-  final CredentialsManager credentialsManager;
+  final AuthService authService;
 
-  const InitialPage({
-    super.key,
-    required this.auth0,
-    required this.credentialsManager,
-  });
+  const InitialPage({super.key, required this.authService});
 
   @override
   Widget build(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
-          pageBuilder: (_, __, ___) => LoginPage(
-            auth0: auth0,
-            credentialsManager: credentialsManager,
-          ),
+          pageBuilder: (_, __, ___) => LoginPage(),
           transitionsBuilder: (_, animation, __, child) {
             return FadeTransition(opacity: animation, child: child);
           },
