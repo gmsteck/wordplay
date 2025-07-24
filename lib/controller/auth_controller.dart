@@ -2,8 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sample/model/auth_state.dart';
+import 'package:sample/provider/navigation_provider.dart';
 import '../service/auth_service.dart';
-import '../widgets/game_list.dart'; // or your actual GameListPage import
 
 class AuthController extends StateNotifier<AuthState> {
   final AuthService authService;
@@ -11,18 +11,13 @@ class AuthController extends StateNotifier<AuthState> {
 
   AuthController(this.authService) : super(const AuthState());
 
-  Future<void> login(BuildContext context) async {
+  Future<void> login(WidgetRef ref) async {
     try {
       state = state.copyWith(isLoggingIn: true);
       final user = await authService.login();
       state = state.copyWith(user: user, isLoggingIn: false);
-      if (context.mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => GameListPage(),
-          ),
-        );
-      }
+      final nav = ref.read(navigationServiceProvider);
+      nav.pushReplacementNamed('/game_list');
     } catch (e) {
       debugPrint('Login failed: $e');
       state = state.copyWith(isLoggingIn: false);
@@ -31,12 +26,11 @@ class AuthController extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> logout(BuildContext context) async {
+  Future<void> logout(WidgetRef ref) async {
     try {
       await authService.logout();
-      if (context.mounted) {
-        Navigator.of(context).pushReplacementNamed('/login');
-      }
+      final nav = ref.read(navigationServiceProvider);
+      nav.pushReplacementNamed('/login');
     } catch (e) {
       debugPrint('Logout error: $e');
     }
