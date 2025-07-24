@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sample/provider/auth_provider.dart';
+import 'package:sample/provider/navigation_provider.dart';
 import '../common/theme.dart';
 import '../common/gradient_app_bar.dart';
 
@@ -20,7 +21,6 @@ class BasePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authController = ref.watch(authControllerProvider.notifier);
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: GradientAppBar(title: title),
@@ -35,7 +35,7 @@ class BasePage extends ConsumerWidget {
                   _BottomNavIcon(
                     icon: Icons.list,
                     tooltip: 'Game List',
-                    onPressed: () => _navigateIfNeeded(context, '/gameList'),
+                    onPressed: () => _navigateIfNeeded(ref, '/game_list'),
                   ),
                   _BottomNavIcon(
                     icon: Icons.gamepad,
@@ -45,11 +45,11 @@ class BasePage extends ConsumerWidget {
                   _BottomNavIcon(
                     icon: Icons.person,
                     tooltip: 'User Page',
-                    onPressed: () => _navigateIfNeeded(context, '/user'),
+                    onPressed: () => _navigateIfNeeded(ref, '/user'),
                   ),
                   Expanded(
                     child: IconButton(
-                      onPressed: () => authController.logout(context),
+                      onPressed: () => authController.logout(ref),
                       icon: const Icon(Icons.logout, color: Colors.white),
                       tooltip: 'Logout',
                     ),
@@ -61,9 +61,10 @@ class BasePage extends ConsumerWidget {
     );
   }
 
-  void _navigateIfNeeded(BuildContext context, String route) {
-    if (ModalRoute.of(context)?.settings.name != route) {
-      Navigator.of(context).pushReplacementNamed(route);
+  void _navigateIfNeeded(WidgetRef ref, String route) {
+    final nav = ref.read(navigationServiceProvider);
+    if (nav.currentRoute != route) {
+      nav.pushReplacementNamed(route);
     }
   }
 }

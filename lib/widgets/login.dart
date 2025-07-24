@@ -66,7 +66,7 @@ class LoginPage extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        onPressed: () => authController.login(context),
+                        onPressed: () => authController.login(ref),
                         child: const Text('Sign Up/Login'),
                       ),
                     ),
