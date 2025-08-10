@@ -25,7 +25,9 @@ class WordleController extends StateNotifier<WordleGame?> {
   }
 
   final wordleControllerProvider =
-      StateNotifierProvider<WordleController, WordleGame?>((ref) {
-    return WordleController(ref);
+      StateNotifierProvider.family<WordleController, WordleGame?, String>(
+          (ref, gameId) {
+    final game = ref.watch(gameServiceProvider(gameId)).valueOrNull;
+    return WordleController(initialGame: game);
   });
 }
