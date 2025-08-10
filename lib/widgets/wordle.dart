@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sample/common/gradient_app_bar.dart';
-import 'package:sample/provider/game_provider.dart';
 import 'package:sample/widgets/shake_widget.dart';
+import '../model/wordle_game_model.dart';
+import '../provider/game_provider.dart'; // contains currentGameProvider & wordleControllerProvider
 
 class WordlePage extends ConsumerWidget {
-  const WordlePage({super.key});
+  final String gameId;
+  const WordlePage({super.key, required this.gameId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(wordleControllerProvider);
+    final gameAsync = ref.watch(gameServiceProvider);
     final controller = ref.read(wordleControllerProvider.notifier);
     final shakeKey = GlobalKey<ShakeWidgetState>();
 
@@ -17,7 +19,7 @@ class WordlePage extends ConsumerWidget {
       final colors = controller.evaluateGuess(guess);
       return Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(state.wordLength, (index) {
+        children: List.generate(guess.length, (index) {
           final letter = guess[index];
           final color = colors[index];
           return Container(
@@ -32,24 +34,24 @@ class WordlePage extends ConsumerWidget {
             child: Text(
               letter,
               style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black),
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
             ),
           );
         }),
       );
     }
 
-    Widget buildEmptyRow() {
+    Widget buildEmptyRow(GameModel gameState, String currentGuess) {
       return ShakeWidget(
         key: shakeKey,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(state.wordLength, (index) {
-            final letter = index < state.currentGuess.length
-                ? state.currentGuess[index]
-                : '';
+          children: List.generate(gameState.word.length, (index) {
+            final letter =
+                index < currentGuess.length ? currentGuess[index] : '';
             return Container(
               margin: const EdgeInsets.all(4),
               width: 48,
@@ -74,7 +76,7 @@ class WordlePage extends ConsumerWidget {
       );
     }
 
-    Widget buildKeyboard() {
+    Widget buildKeyboard(GameModel gameState, String currentGuess) {
       const keys = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
       const double keySize = 30.0;
 
@@ -96,7 +98,8 @@ class WordlePage extends ConsumerWidget {
                         onPressed: () => controller.onKeyPressed(letter),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: () {
-                            final status = state.letterStatus[letter];
+                            final status = controller.getLetterStatus(
+                                letter, gameState.guesses, gameState.word);
                             switch (status) {
                               case 'green':
                                 return Colors.green;
@@ -142,10 +145,15 @@ class WordlePage extends ConsumerWidget {
                   width: keySize * 2,
                   height: keySize,
                   child: ElevatedButton(
-                    onPressed: () => controller.onSubmit(context, shakeKey),
+                    onPressed: () => controller.onSubmitGuess(
+                      context: context,
+                      shakeKey: shakeKey,
+                      gameId: gameId,
+                    ),
                     style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        padding: EdgeInsets.zero),
+                      backgroundColor: Colors.green,
+                      padding: EdgeInsets.zero,
+                    ),
                     child: const Text('Enter',
                         style: TextStyle(color: Colors.white)),
                   ),
@@ -159,17 +167,26 @@ class WordlePage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: GradientAppBar(title: 'Wordle'),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          const SizedBox(height: 16),
-          ...state.guesses.map(buildGuessRow),
-          if (state.guesses.length < state.maxAttempts) buildEmptyRow(),
-          const Spacer(),
-          buildKeyboard(),
-          const SizedBox(height: 16),
-        ],
+      appBar: const GradientAppBar(title: 'Wordle'),
+      body: gameAsync.when(
+        data: (gameState) {
+          final currentGuess =
+              ref.watch(wordleControllerProvider)?.currentGuess ?? '';
+          return Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              const SizedBox(height: 16),
+              ...gameState.guesses.map(buildGuessRow),
+              if (gameState.guesses.length < 6) // 6 max attempts
+                buildEmptyRow(gameState, currentGuess),
+              const Spacer(),
+              buildKeyboard(gameState, currentGuess),
+              const SizedBox(height: 16),
+            ],
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, _) => Center(child: Text(err.toString())),
       ),
     );
   }
