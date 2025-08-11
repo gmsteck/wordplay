@@ -15,5 +15,8 @@
   "license": "ISC",
   "devDependencies": {
     "@types/uuid": "^10.0.0"
+  },
+  "dependencies": {
+    "firebase-functions": "^6.4.0"
   }
 }
