@@ -1,50 +1,42 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-enum GameStatus { pending, inProgress, won, lost }
-
 class WordleGame {
-  final String id;
+  final String gameId;
   final String senderId;
   final String receiverId;
   final String word;
-  final int currentGuess;
   final List<String> guesses;
-  final GameStatus status;
-  final Timestamp createdAt;
+  final String status; // 'pending' | 'in_progress' | 'won' | 'lost'
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
   WordleGame({
-    required this.id,
+    required this.gameId,
     required this.senderId,
     required this.receiverId,
     required this.word,
-    required this.currentGuess,
     required this.guesses,
     required this.status,
     required this.createdAt,
+    required this.updatedAt,
   });
 
-  Map<String, dynamic> toMap() {
-    return {
-      'senderId': senderId,
-      'receiverId': receiverId,
-      'word': word,
-      'currentGuess': currentGuess,
-      'guesses': guesses,
-      'status': status.name,
-      'createdAt': createdAt,
-    };
-  }
-
-  factory WordleGame.fromMap(String id, Map<String, dynamic> map) {
+  factory WordleGame.fromMap(Map<String, dynamic> map) {
     return WordleGame(
-      id: id,
+      gameId: map['gameId'],
       senderId: map['senderId'],
       receiverId: map['receiverId'],
       word: map['word'],
-      currentGuess: map['currentGuess'],
-      guesses: List<String>.from(map['guesses']),
-      status: GameStatus.values.firstWhere((e) => e.name == map['status']),
-      createdAt: map['createdAt'],
+      guesses: List<String>.from(map['guesses'] ?? []),
+      status: map['status'],
+      createdAt: DateTime.parse(map['createdAt']['seconds'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(
+                  (map['createdAt']['seconds'] as int) * 1000)
+              .toIso8601String()
+          : map['createdAt']),
+      updatedAt: DateTime.parse(map['updatedAt']['seconds'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(
+                  (map['updatedAt']['seconds'] as int) * 1000)
+              .toIso8601String()
+          : map['updatedAt']),
     );
   }
 }
