@@ -1,11 +1,20 @@
-/* eslint-disable object-curly-spacing */
-/* eslint-disable require-jsdoc */
-import { onCall } from "firebase-functions/v2/https";
+/**
+ * Import function triggers from their respective submodules:
+ *
+ * import {onCall} from "firebase-functions/v2/https";
+ * import {onDocumentWritten} from "firebase-functions/v2/firestore";
+ *
+ * See a full list of supported triggers at https://firebase.google.com/docs/functions
+ */
+
+import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
+import { onCall } from "firebase-functions/https";
 
 admin.initializeApp();
 const db = admin.firestore();
 
+// Types
 interface WordleGame {
   gameId: string;
   senderId: string;
@@ -17,10 +26,17 @@ interface WordleGame {
   updatedAt: FirebaseFirestore.Timestamp;
 }
 
+/**
+ * Generate a random ID for games
+ */
 function generateGameId(): string {
   return db.collection("games").doc().id;
 }
 
+/**
+ * Create a new Wordle game
+ * Triggered by HTTPS request from client
+ */
 export const createGame = onCall(async (event) => {
   const { auth, data } = event;
 
@@ -51,29 +67,28 @@ export const createGame = onCall(async (event) => {
   return { gameId };
 });
 
+/**
+ * Accept a game invitation (start the game)
+ */
 export const acceptGame = onCall(async (event) => {
   const { auth, data } = event;
-
-  if (!auth?.uid) {
-    throw new Error("unauthenticated: Must be logged in");
-  }
+  if (!auth?.uid)
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "Must be logged in"
+    );
 
   const { gameId } = data;
-  if (!gameId) {
-    throw new Error("invalid-argument: Missing gameId");
-  }
-
   const gameRef = db.collection("games").doc(gameId);
   const gameSnap = await gameRef.get();
 
   if (!gameSnap.exists) {
-    throw new Error("not-found: Game not found");
+    throw new functions.https.HttpsError("not-found", "Game not found");
   }
 
   const game = gameSnap.data() as WordleGame;
-
   if (game.receiverId !== auth.uid) {
-    throw new Error("permission-denied: Not your game");
+    throw new functions.https.HttpsError("permission-denied", "Not your game");
   }
 
   await gameRef.update({
@@ -82,6 +97,88 @@ export const acceptGame = onCall(async (event) => {
   });
 
   return { success: true };
+});
+
+/**
+ * Submit a guess
+ */
+export const submitGuess = onCall(async (event) => {
+  const { auth, data } = event;
+  if (!auth?.uid)
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "Must be logged in"
+    );
+
+  const { gameId, guess } = data;
+  if (!guess || guess.length !== 5) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Guess must be 5 letters"
+    );
+  }
+
+  const gameRef = db.collection("games").doc(gameId);
+  const gameSnap = await gameRef.get();
+
+  if (!gameSnap.exists)
+    throw new functions.https.HttpsError("not-found", "Game not found");
+
+  const game = gameSnap.data() as WordleGame;
+  if (game.receiverId !== auth.uid) {
+    throw new functions.https.HttpsError("permission-denied", "Not your turn");
+  }
+  if (game.status !== "in_progress") {
+    throw new functions.https.HttpsError(
+      "failed-precondition",
+      "Game not in progress"
+    );
+  }
+
+  const updatedGuesses = [...game.guesses, guess.toLowerCase()];
+  let newStatus = "";
+
+  if (guess.toLowerCase() === game.word) {
+    newStatus = "won";
+  } else if (updatedGuesses.length >= 6) {
+    newStatus = "lost";
+  }
+
+  await gameRef.update({
+    guesses: updatedGuesses,
+    status: newStatus,
+    updatedAt: admin.firestore.Timestamp.now(),
+  });
+
+  return { status: newStatus, guesses: updatedGuesses };
+});
+
+/**
+ * Get the current game state
+ */
+export const getGameState = onCall(async (event) => {
+  const { auth, data } = event;
+  if (!auth?.uid)
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "Must be logged in"
+    );
+
+  const { gameId } = data;
+  const gameSnap = await db.collection("games").doc(gameId).get();
+
+  if (!gameSnap.exists)
+    throw new functions.https.HttpsError("not-found", "Game not found");
+
+  const game = gameSnap.data() as WordleGame;
+  if (![game.senderId, game.receiverId].includes(auth.uid)) {
+    throw new functions.https.HttpsError(
+      "permission-denied",
+      "Not part of this game"
+    );
+  }
+
+  return game;
 });
 
 /**
