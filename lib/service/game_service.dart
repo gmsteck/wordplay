@@ -1,53 +1,48 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../model/wordle_game_model.dart';
 
-class GameService {
-  final _db = FirebaseFirestore.instance;
+class WordleGameService {
+  final FirebaseFunctions functions;
+
+  WordleGameService({FirebaseFunctions? functions})
+      : functions = functions ?? FirebaseFunctions.instance;
 
   Future<String> createGame({
-    required String senderId,
     required String receiverId,
     required String word,
   }) async {
-    final gameRef = await _db.collection('games').add({
-      'senderId': senderId,
+    final callable = functions.httpsCallable('createGame');
+    final result = await callable.call({
       'receiverId': receiverId,
       'word': word,
-      'currentGuess': 0,
-      'guesses': [],
-      'status': GameStatus.pending.name,
-      'createdAt': FieldValue.serverTimestamp(),
     });
-    return gameRef.id;
+    return result.data['gameId'] as String;
   }
 
-  Future<void> updateGuess(
-    String gameId,
-    String guess,
-  ) async {
-    final gameRef = _db.collection('games').doc(gameId);
-    final snapshot = await gameRef.get();
-
-    if (!snapshot.exists) throw Exception('Game not found');
-
-    final data = snapshot.data()!;
-    final guesses = List<String>.from(data['guesses']);
-    guesses.add(guess);
-
-    await gameRef.update({
-      'guesses': guesses,
-      'currentGuess': guesses.length,
-      'status': guesses.last == data['word']
-          ? GameStatus.completed.name
-          : guesses.length >= 6
-              ? GameStatus.completed.name
-              : GameStatus.inProgress.name,
-    });
+  Future<bool> acceptGame({required String gameId}) async {
+    final callable = functions.httpsCallable('acceptGame');
+    final result = await callable.call({'gameId': gameId});
+    return result.data['success'] as bool;
   }
 
-  Stream<WordleGame> watchGame(String gameId) {
-    return _db.collection('games').doc(gameId).snapshots().map((doc) {
-      return WordleGame.fromMap(doc.id, doc.data()!);
+  Future<Map<String, dynamic>> submitGuess({
+    required String gameId,
+    required String guess,
+  }) async {
+    final callable = functions.httpsCallable('submitGuess');
+    final result = await callable.call({
+      'gameId': gameId,
+      'guess': guess,
     });
+    return {
+      'status': result.data['status'] as String,
+      'guesses': List<String>.from(result.data['guesses'] ?? []),
+    };
+  }
+
+  Future<WordleGame> getGameState({required String gameId}) async {
+    final callable = functions.httpsCallable('getGameState');
+    final result = await callable.call({'gameId': gameId});
+    return WordleGame.fromMap(Map<String, dynamic>.from(result.data));
   }
 }
