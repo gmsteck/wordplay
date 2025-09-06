@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1011807900339",
+    "project_id": "wordplay-d7bb1",
+    "storage_bucket": "wordplay-d7bb1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1011807900339:android:6fa58a07a99b689613d6c6",
+        "android_client_info": {
+          "package_name": "com.auth0.sample"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAkLqexxVhRN3dCDH1fwTcvGiovC0nf2Cw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

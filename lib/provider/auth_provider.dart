@@ -1,20 +1,15 @@
 // provider/auth_providers.dart
-import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:sample/model/auth_state.dart';
 import '../controller/auth_controller.dart';
 import '../service/auth_service.dart';
 
+// Provide AuthService (now using FirebaseAuth internally)
 final authServiceProvider = Provider<AuthService>((ref) {
-  final auth0 =
-      Auth0(dotenv.env['AUTH0_DOMAIN']!, dotenv.env['AUTH0_CLIENT_ID']!);
-  final credentialsManager = auth0.credentialsManager;
-  return AuthService(
-      auth0: auth0,
-      credentialsManager: credentialsManager); // optionally pass config
+  return AuthService();
 });
 
+// Provide AuthController, which depends on AuthService
 final authControllerProvider =
     StateNotifierProvider<AuthController, AuthState>((ref) {
   final authService = ref.watch(authServiceProvider);

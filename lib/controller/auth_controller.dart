@@ -6,29 +6,42 @@ import 'package:sample/provider/navigation_provider.dart';
 import '../service/auth_service.dart';
 
 class AuthController extends StateNotifier<AuthState> {
-  final AuthService authService;
-  bool isLoggingIn = false;
+  final AuthService _authService;
 
-  AuthController(this.authService) : super(const AuthState());
+  AuthController(this._authService) : super(const AuthState());
 
-  Future<void> login(WidgetRef ref) async {
+  Future<void> login(String email, String password, WidgetRef ref) async {
     try {
       state = state.copyWith(isLoggingIn: true);
-      final user = await authService.login();
+      final user = await _authService.login(email: email, password: password);
       state = state.copyWith(user: user, isLoggingIn: false);
+
       final nav = ref.read(navigationServiceProvider);
       nav.pushReplacementNamed('/game_list');
     } catch (e) {
       debugPrint('Login failed: $e');
       state = state.copyWith(isLoggingIn: false);
-    } finally {
-      isLoggingIn = false;
+    }
+  }
+
+  Future<void> register(String email, String password, WidgetRef ref) async {
+    try {
+      state = state.copyWith(isLoggingIn: true);
+      final user =
+          await _authService.register(email: email, password: password);
+      state = state.copyWith(user: user, isLoggingIn: false);
+
+      final nav = ref.read(navigationServiceProvider);
+      nav.pushReplacementNamed('/game_list');
+    } catch (e) {
+      debugPrint('Registration failed: $e');
+      state = state.copyWith(isLoggingIn: false);
     }
   }
 
   Future<void> logout(WidgetRef ref) async {
     try {
-      await authService.logout();
+      await _authService.logout();
       final nav = ref.read(navigationServiceProvider);
       nav.pushReplacementNamed('/login');
     } catch (e) {
