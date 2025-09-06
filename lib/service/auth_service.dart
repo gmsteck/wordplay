@@ -1,33 +1,59 @@
 // services/auth_service.dart
-import 'package:auth0_flutter/auth0_flutter.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../model/user_model.dart';
 
 class AuthService {
-  final Auth0 auth0;
-  final CredentialsManager credentialsManager;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  AuthService({required this.auth0, required this.credentialsManager});
+  Future<UserModel?> login(
+      {required String email, required String password}) async {
+    try {
+      final credential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      final user = credential.user;
+      if (user == null) return null;
 
-  Future<UserModel?> login() async {
-    final credentials = await auth0
-        .webAuthentication(scheme: dotenv.env['AUTH0_CUSTOM_SCHEME']!)
-        .login();
-
-    await credentialsManager.storeCredentials(credentials);
-
-    final user = credentials.user;
-    return UserModel(
-        id: user.sub,
-        pictureUrl: user.pictureUrl ?? Uri(),
-        name: user.name ?? 'Unknown',
+      return UserModel(
+        id: user.uid,
+        pictureUrl: Uri(), // Firebase doesn't store picture URLs by default
+        name: user.displayName ?? 'Unknown',
         email: user.email ?? 'no-email@example.com',
-        emailVerified: user.isEmailVerified ?? false,
-        lastUpdated: user.updatedAt ?? DateTime(0, 0, 0));
+        emailVerified: user.emailVerified,
+        lastUpdated: user.metadata.lastSignInTime ?? DateTime.now(),
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<UserModel?> register(
+      {required String email, required String password}) async {
+    try {
+      final credential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      final user = credential.user;
+      if (user == null) return null;
+
+      return UserModel(
+        id: user.uid,
+        pictureUrl: Uri(),
+        name: user.displayName ?? 'Unknown',
+        email: user.email ?? 'no-email@example.com',
+        emailVerified: user.emailVerified,
+        lastUpdated: user.metadata.creationTime ?? DateTime.now(),
+      );
+    } catch (e) {
+      rethrow;
+    }
   }
 
   Future<void> logout() async {
-    credentialsManager.clearCredentials();
-    //await auth0.webAuthentication().logout();
+    await _auth.signOut();
   }
+
+  Stream<User?> get authStateChanges => _auth.authStateChanges();
 }

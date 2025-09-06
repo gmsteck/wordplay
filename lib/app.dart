@@ -25,7 +25,9 @@ class App extends ConsumerWidget {
         '/game_list': (context) {
           return GameListPage();
         },
-        '/wordle': (context) => const WordlePage(),
+        '/wordle': (context) => const WordlePage(
+              gameId: "1",
+            ),
         '/user': (context) {
           return UserPage();
         },
