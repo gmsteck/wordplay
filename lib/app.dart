@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sample/provider/navigation_provider.dart';
+import 'package:sample/widgets/create_game.dart';
 import 'package:sample/widgets/initial_page.dart';
 import 'package:sample/widgets/wordle.dart';
 import 'widgets/game_list.dart';
@@ -18,6 +19,9 @@ class App extends ConsumerWidget {
       theme: ThemeData.dark(), // or your custom theme
       home: InitialPage(),
       routes: {
+        '/create_game': (context) {
+          return CreateGamePage();
+        },
         '/loading': (context) => const Scaffold(
               body: Center(child: CircularProgressIndicator()),
             ),
@@ -25,12 +29,12 @@ class App extends ConsumerWidget {
         '/game_list': (context) {
           return GameListPage();
         },
-        '/wordle': (context) => const WordlePage(
-              gameId: "1",
-            ),
         '/user': (context) {
           return UserPage();
         },
+        '/wordle': (context) => const WordlePage(
+              gameId: '1',
+            ),
       },
     );
   }

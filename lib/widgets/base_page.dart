@@ -39,8 +39,8 @@ class BasePage extends ConsumerWidget {
                   ),
                   _BottomNavIcon(
                     icon: Icons.gamepad,
-                    tooltip: 'Wordle',
-                    onPressed: () => Navigator.of(context).pushNamed('/wordle'),
+                    tooltip: 'Create Game',
+                    onPressed: () => _navigateIfNeeded(ref, '/create_game'),
                   ),
                   _BottomNavIcon(
                     icon: Icons.person,

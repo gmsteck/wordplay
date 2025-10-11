@@ -178,7 +178,11 @@ export const getGameState = onCall(async (event) => {
     );
   }
 
-  return game;
+  return {
+    ...game,
+    createdAt: game.createdAt.toDate().toISOString(),
+    updatedAt: game.updatedAt.toDate().toISOString(),
+  };
 });
 
 /**
