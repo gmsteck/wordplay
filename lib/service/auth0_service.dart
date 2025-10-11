@@ -22,7 +22,7 @@ class AuthService {
         pictureUrl: user.pictureUrl ?? Uri(),
         name: user.name ?? 'Unknown',
         email: user.email ?? 'no-email@example.com',
-        emailVerified: user.isEmailVerified ?? false,
+        createdAt: DateTime.now(),
         lastUpdated: user.updatedAt ?? DateTime(0, 0, 0));
   }
 

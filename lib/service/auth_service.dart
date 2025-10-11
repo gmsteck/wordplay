@@ -20,7 +20,7 @@ class AuthService {
         pictureUrl: Uri(), // Firebase doesn't store picture URLs by default
         name: user.displayName ?? 'Unknown',
         email: user.email ?? 'no-email@example.com',
-        emailVerified: user.emailVerified,
+        createdAt: user.metadata.creationTime ?? DateTime.now(),
         lastUpdated: user.metadata.lastSignInTime ?? DateTime.now(),
       );
     } catch (e) {
@@ -43,7 +43,7 @@ class AuthService {
         pictureUrl: Uri(),
         name: user.displayName ?? 'Unknown',
         email: user.email ?? 'no-email@example.com',
-        emailVerified: user.emailVerified,
+        createdAt: user.metadata.creationTime ?? DateTime.now(),
         lastUpdated: user.metadata.creationTime ?? DateTime.now(),
       );
     } catch (e) {

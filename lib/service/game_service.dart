@@ -1,11 +1,35 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import '../model/wordle_game_model.dart';
 
 class WordleGameService {
   final FirebaseFunctions functions;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   WordleGameService({FirebaseFunctions? functions})
       : functions = functions ?? FirebaseFunctions.instance;
+
+  Stream<List<WordleGame>> getGamesForUser(String userId) {
+    final query = _db
+        .collection('games')
+        .where('receiverId', isEqualTo: userId)
+        .orderBy('createdAt', descending: true);
+
+    return query.snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) {
+        return WordleGame.fromMap({
+          'gameId': doc['gameId'],
+          'senderId': doc['senderId'],
+          'receiverId': doc['receiverId'],
+          'word': doc['word'],
+          'guesses': List<String>.from(doc['guesses'] ?? []),
+          'status': doc['status'],
+          'createdAt': doc['createdAt'],
+          'updatedAt': doc['updatedAt'],
+        });
+      }).toList();
+    });
+  }
 
   Future<String> createGame({
     required String receiverId,

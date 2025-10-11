@@ -42,7 +42,6 @@ class UserPage extends ConsumerWidget {
                   _userEntry('ID', user.id),
                   _userEntry('Name', user.name),
                   _userEntry('Email', user.email),
-                  _userEntry('Email Verified', user.emailVerified.toString()),
                   _userEntry('Updated At', user.lastUpdated.toIso8601String()),
                 ],
               ),
