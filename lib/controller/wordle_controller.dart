@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sample/model/wordle_game_model.dart';
 import 'package:sample/provider/game_provider.dart';
@@ -57,7 +58,6 @@ class WordleGameController extends StateNotifier<WordleGameState> {
 
   Future<void> submitGuess(String gameId, String guess) async {
     try {
-      state = state.copyWith(isLoading: true, error: null);
       final result = await _service.submitGuess(gameId: gameId, guess: guess);
       final updatedGame = state.game?.copyWith(
         guesses: List<String>.from(result['guesses']),
@@ -68,6 +68,63 @@ class WordleGameController extends StateNotifier<WordleGameState> {
       state = state.copyWith(
           isLoading: false, error: 'Failed to submit guess: ${e.toString()}');
     }
+  }
+
+  /// Returns a map of each letter to its highest status across all guesses.
+  Map<String, String> computeLetterStatusMap(WordleGame game) {
+    final Map<String, String> letterStatus = {};
+
+    for (final guess in game.guesses) {
+      for (int i = 0; i < guess.length; i++) {
+        final letter = guess[i].toLowerCase();
+        final wordLetter = game.word[i].toLowerCase();
+
+        if (letter == wordLetter) {
+          letterStatus[letter] = 'green'; // highest priority
+        } else if (game.word.contains(letter)) {
+          // Only upgrade if not already green
+          if (letterStatus[letter] != 'green') {
+            letterStatus[letter] = 'yellow';
+          }
+        } else {
+          // Only upgrade if not already green/yellow
+          if (letterStatus[letter] != 'green' &&
+              letterStatus[letter] != 'yellow') {
+            letterStatus[letter] = 'grey';
+          }
+        }
+      }
+    }
+
+    return letterStatus;
+  }
+
+  String getLetterStatusFromMap(String letter, Map<String, String> statusMap) {
+    return statusMap[letter.toLowerCase()] ?? 'none';
+  }
+
+  List<Color> evaluateGuess(String guess, WordleGame game) {
+    final colors = List<Color>.filled(guess.length, Colors.grey);
+    final wordChars = game.word.split('');
+    final guessChars = guess.split('');
+
+    // First pass: mark greens
+    for (int i = 0; i < guessChars.length; i++) {
+      if (i < wordChars.length && guessChars[i] == wordChars[i]) {
+        colors[i] = Colors.green;
+        wordChars[i] = ''; // remove matched letter
+      }
+    }
+
+    // Second pass: mark yellows
+    for (int i = 0; i < guessChars.length; i++) {
+      if (colors[i] == Colors.grey && wordChars.contains(guessChars[i])) {
+        colors[i] = Colors.yellow.shade700;
+        wordChars[wordChars.indexOf(guessChars[i])] = ''; // remove used letter
+      }
+    }
+
+    return colors;
   }
 }
 

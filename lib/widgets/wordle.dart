@@ -4,7 +4,6 @@ import 'package:sample/common/gradient_app_bar.dart';
 import 'package:sample/controller/wordle_controller.dart';
 import 'package:sample/provider/word_list_provider.dart';
 import 'package:sample/widgets/shake_widget.dart';
-import '../model/wordle_game_model.dart'; // Your WordleGame model// The controller file
 
 class WordlePage extends ConsumerStatefulWidget {
   final String gameId;
@@ -16,13 +15,11 @@ class WordlePage extends ConsumerStatefulWidget {
 
 class _WordlePageState extends ConsumerState<WordlePage> {
   final GlobalKey<ShakeWidgetState> shakeKey = GlobalKey<ShakeWidgetState>();
-
   String currentGuess = '';
 
   @override
   void initState() {
     super.initState();
-    // Load the game on start
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(wordleGameControllerProvider.notifier).loadGame(widget.gameId);
     });
@@ -43,116 +40,27 @@ class _WordlePageState extends ConsumerState<WordlePage> {
   }
 
   Future<void> onSubmitGuess() async {
+    final state = ref.watch(wordleGameControllerProvider);
+    final controller = ref.read(wordleGameControllerProvider.notifier);
     final validator = ref.read(wordValidationServiceProvider);
+    if (state.game?.status == 'pending') {
+      await controller.acceptGame(widget.gameId);
+    }
     if (currentGuess.length != 5 || !validator.isValidWord(currentGuess)) {
       shakeKey.currentState?.shake();
       return;
     }
-    final controller = ref.read(wordleGameControllerProvider.notifier);
-    final state = ref.watch(wordleGameControllerProvider);
-    if (state.game?.status == 'pending') {
-      await controller.acceptGame(widget.gameId);
-    }
+
     await controller.submitGuess(widget.gameId, currentGuess);
     setState(() {
       currentGuess = '';
     });
   }
 
-  /// Returns a map of each letter to its highest status across all guesses.
-  Map<String, String> computeLetterStatusMap(WordleGame game) {
-    final Map<String, String> letterStatus = {};
-
-    for (final guess in game.guesses) {
-      for (int i = 0; i < guess.length; i++) {
-        final letter = guess[i].toLowerCase();
-        final wordLetter = game.word[i].toLowerCase();
-
-        if (letter == wordLetter) {
-          letterStatus[letter] = 'green'; // highest priority
-        } else if (game.word.contains(letter)) {
-          // Only upgrade if not already green
-          if (letterStatus[letter] != 'green') {
-            letterStatus[letter] = 'yellow';
-          }
-        } else {
-          // Only upgrade if not already green/yellow
-          if (letterStatus[letter] != 'green' &&
-              letterStatus[letter] != 'yellow') {
-            letterStatus[letter] = 'grey';
-          }
-        }
-      }
-    }
-
-    return letterStatus;
-  }
-
-  String getLetterStatusFromMap(String letter, Map<String, String> statusMap) {
-    return statusMap[letter.toLowerCase()] ?? 'none';
-  }
-
-  List<Color> evaluateGuess(String guess, WordleGame game) {
-    final colors = List<Color>.filled(guess.length, Colors.grey);
-    final wordChars = game.word.split('');
-    final guessChars = guess.split('');
-
-    // First pass: mark greens
-    for (int i = 0; i < guessChars.length; i++) {
-      if (i < wordChars.length && guessChars[i] == wordChars[i]) {
-        colors[i] = Colors.green;
-        wordChars[i] = ''; // remove matched letter
-      }
-    }
-
-    // Second pass: mark yellows
-    for (int i = 0; i < guessChars.length; i++) {
-      if (colors[i] == Colors.grey && wordChars.contains(guessChars[i])) {
-        colors[i] = Colors.yellow.shade700;
-        wordChars[wordChars.indexOf(guessChars[i])] = ''; // remove used letter
-      }
-    }
-
-    return colors;
-  }
-
-  String getLetterStatus(String letter, WordleGame game) {
-    letter = letter.toLowerCase();
-
-    bool isGreen = false;
-    bool isYellow = false;
-    bool isGrey = false;
-
-    for (final guess in game.guesses) {
-      for (int i = 0; i < guess.length; i++) {
-        final gLetter = guess[i].toLowerCase();
-        if (gLetter != letter) continue;
-
-        if (letter == game.word[i].toLowerCase()) {
-          isGreen = true;
-        } else if (game.word.contains(letter)) {
-          isYellow = true;
-        } else {
-          isGrey = true;
-        }
-      }
-    }
-
-    if (isGreen) return 'green';
-    if (isYellow) return 'yellow';
-    if (isGrey) return 'grey';
-    return 'none';
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(wordleGameControllerProvider);
-
-    if (state.isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
+    final game = state.game;
 
     if (state.error != null) {
       return Scaffold(
@@ -161,7 +69,6 @@ class _WordlePageState extends ConsumerState<WordlePage> {
       );
     }
 
-    final game = state.game;
     if (game == null) {
       return Scaffold(
         appBar: const GradientAppBar(title: 'Wordle'),
@@ -170,7 +77,9 @@ class _WordlePageState extends ConsumerState<WordlePage> {
     }
 
     Widget buildGuessRow(String guess) {
-      final colors = evaluateGuess(guess, game);
+      final colors = ref
+          .read(wordleGameControllerProvider.notifier)
+          .evaluateGuess(guess, game);
       return Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(guess.length, (index) {
@@ -235,8 +144,9 @@ class _WordlePageState extends ConsumerState<WordlePage> {
       const keys = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
       const double keySize = 30.0;
 
-      // Compute the status map once
-      final letterStatusMap = computeLetterStatusMap(game);
+      final letterStatusMap = ref
+          .read(wordleGameControllerProvider.notifier)
+          .computeLetterStatusMap(game);
 
       return Column(
         mainAxisSize: MainAxisSize.min,
@@ -247,8 +157,9 @@ class _WordlePageState extends ConsumerState<WordlePage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: row.split('').map((letter) {
-                  final status =
-                      getLetterStatusFromMap(letter, letterStatusMap);
+                  final status = ref
+                      .read(wordleGameControllerProvider.notifier)
+                      .getLetterStatusFromMap(letter, letterStatusMap);
                   Color bgColor;
                   switch (status) {
                     case 'green':
@@ -326,16 +237,30 @@ class _WordlePageState extends ConsumerState<WordlePage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: const GradientAppBar(title: 'Wordle'),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
+      body: Stack(
         children: [
-          const SizedBox(height: 16),
-          ...game.guesses.map(buildGuessRow),
-          if (game.guesses.length < 6) // max attempts
-            buildEmptyRow(currentGuess),
-          const Spacer(),
-          buildKeyboard(),
-          const SizedBox(height: 16),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              const SizedBox(height: 16),
+              ...game.guesses.map(buildGuessRow),
+              if (game.guesses.length < 6) buildEmptyRow(currentGuess),
+              const Spacer(),
+              buildKeyboard(),
+              const SizedBox(height: 16),
+            ],
+          ),
+          if (state.isLoading)
+            Positioned.fill(
+              child: Container(
+                color: Colors.white.withOpacity(0.3),
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    color: Color.fromRGBO(255, 68, 221, 1),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

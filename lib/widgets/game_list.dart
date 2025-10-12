@@ -87,7 +87,7 @@ class GameListPage extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      trailing: Text('Guess ${game.guesses.length}/5',
+                      trailing: Text('Guess ${game.guesses.length}/6',
                           style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold)),
