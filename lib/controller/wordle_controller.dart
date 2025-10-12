@@ -36,12 +36,16 @@ class WordleGameController extends StateNotifier<WordleGameState> {
 
   Future<void> loadGame(String gameId) async {
     try {
-      state = state.copyWith(isLoading: true, error: null);
+      // Clear old game first
+      state = WordleGameState(isLoading: true, game: null, error: null);
+
       final game = await _service.getGameState(gameId: gameId);
       state = state.copyWith(game: game, isLoading: false);
     } catch (e) {
       state = state.copyWith(
-          isLoading: false, error: 'Failed to load game: ${e.toString()}');
+        isLoading: false,
+        error: 'Failed to load game: ${e.toString()}',
+      );
     }
   }
 

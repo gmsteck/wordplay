@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/services.dart' show rootBundle;
 
 class WordValidationService {
@@ -11,5 +13,9 @@ class WordValidationService {
 
   bool isValidWord(String word) {
     return _validWords.contains(word.toUpperCase());
+  }
+
+  String getRandomWord() {
+    return _validWords.elementAt(Random().nextInt(_validWords.length - 1));
   }
 }

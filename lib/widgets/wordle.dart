@@ -69,6 +69,22 @@ class _WordlePageState extends ConsumerState<WordlePage> {
       );
     }
 
+    if (state.isLoading) {
+      // Show overlay spinner or loading screen
+      return Scaffold(
+        body: Positioned.fill(
+          child: Container(
+            color: Colors.white,
+            child: const Center(
+              child: CircularProgressIndicator(
+                color: Color.fromRGBO(255, 68, 221, 1),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     if (game == null) {
       return Scaffold(
         appBar: const GradientAppBar(title: 'Wordle'),
@@ -253,7 +269,7 @@ class _WordlePageState extends ConsumerState<WordlePage> {
           if (state.isLoading)
             Positioned.fill(
               child: Container(
-                color: Colors.white.withOpacity(0.3),
+                color: Colors.white.withValues(alpha: 0.3),
                 child: const Center(
                   child: CircularProgressIndicator(
                     color: Color.fromRGBO(255, 68, 221, 1),

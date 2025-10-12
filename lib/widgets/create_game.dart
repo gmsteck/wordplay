@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sample/provider/auth_provider.dart';
 import 'package:sample/provider/game_provider.dart';
+import 'package:sample/provider/word_list_provider.dart';
+import 'package:sample/service/word_list_service.dart';
 import 'package:sample/widgets/base_page.dart';
 
 class CreateGamePage extends ConsumerStatefulWidget {
@@ -27,10 +29,12 @@ class _GameListPageState extends ConsumerState<CreateGamePage> {
       }
 
       // Example: send a test game to yourself with word 'flutter'
+      final wordService = ref.read(wordValidationServiceProvider);
+      final testWord = wordService.getRandomWord();
       final gameService = ref.read(wordleGameServiceProvider);
       final gameId = await gameService.createGame(
         receiverId: user.id,
-        word: 'audio',
+        word: testWord,
       );
 
       if (!mounted) return;
@@ -61,12 +65,13 @@ class _GameListPageState extends ConsumerState<CreateGamePage> {
             : ElevatedButton(
                 onPressed: _createTestGame,
                 style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromRGBO(255, 68, 221, 1),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 ),
                 child: const Text(
                   'Create Test Game',
-                  style: TextStyle(fontSize: 18),
+                  style: TextStyle(fontSize: 18, color: Colors.white),
                 ),
               ),
       ),
