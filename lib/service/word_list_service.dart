@@ -1,9 +1,15 @@
 import 'package:flutter/services.dart' show rootBundle;
 
-late Set<String> validWords;
+class WordValidationService {
+  late final Set<String> _validWords;
 
-Future<void> loadWordList() async {
-  final wordString = await rootBundle.loadString('assets/words.txt');
-  validWords =
-      wordString.split('\n').map((word) => word.trim().toUpperCase()).toSet();
+  Future<void> loadWordList() async {
+    final wordString = await rootBundle.loadString('assets/words.txt');
+    _validWords =
+        wordString.split('\n').map((word) => word.trim().toUpperCase()).toSet();
+  }
+
+  bool isValidWord(String word) {
+    return _validWords.contains(word.toUpperCase());
+  }
 }

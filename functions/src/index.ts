@@ -136,7 +136,7 @@ export const submitGuess = onCall(async (event) => {
   }
 
   const updatedGuesses = [...game.guesses, guess.toLowerCase()];
-  let newStatus = "";
+  let newStatus = "in_progress";
 
   if (guess.toLowerCase() === game.word) {
     newStatus = "won";
