@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sample/provider/navigation_provider.dart';
-import 'package:sample/widgets/create_game.dart';
-import 'package:sample/widgets/initial_page.dart';
-import 'package:sample/widgets/wordle.dart';
-import 'widgets/game_list.dart';
-import 'widgets/login.dart';
-import 'widgets/user.dart';
+import 'package:sample/view/create_game.dart';
+import 'package:sample/view/initial_page.dart';
+import 'package:sample/view/wordle.dart';
+import 'view/game_list.dart';
+import 'view/login.dart';
+import 'view/user.dart';
 
 class App extends ConsumerWidget {
   const App({super.key});

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sample/common/gradient_app_bar.dart';
 import 'package:sample/controller/wordle_controller.dart';
 import 'package:sample/provider/word_list_provider.dart';
-import 'package:sample/widgets/shake_widget.dart';
+import 'package:sample/view/shake_widget.dart';
 
 class WordlePage extends ConsumerStatefulWidget {
   final String gameId;

@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:sample/common/theme.dart';
 import 'package:sample/provider/game_list_provider.dart';
-import 'package:sample/widgets/base_page.dart';
-import 'package:sample/widgets/wordle.dart';
+import 'package:sample/view/base_page.dart';
+import 'package:sample/view/wordle.dart';
 
 class GameListPage extends ConsumerWidget {
   const GameListPage({super.key});
