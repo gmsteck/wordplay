@@ -20,7 +20,7 @@ class _GameListPageState extends ConsumerState<GameListPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  /// Keeps track of which games are currently loading (accept/delete)
+  /// Track loading state for per-game actions
   final Map<String, bool> _itemLoading = {};
 
   @override
@@ -38,6 +38,7 @@ class _GameListPageState extends ConsumerState<GameListPage>
   @override
   Widget build(BuildContext context) {
     final userId = FirebaseAuth.instance.currentUser?.uid;
+
     if (userId == null) {
       return const BasePage(
         title: 'Game List',
@@ -53,7 +54,7 @@ class _GameListPageState extends ConsumerState<GameListPage>
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => Center(child: Text('Error: $err')),
         data: (games) {
-          // Split games by state
+          // Split active vs past
           final activeGames = games
               .where((g) => g.status == 'pending' || g.status == 'in_progress')
               .toList();
@@ -89,17 +90,12 @@ class _GameListPageState extends ConsumerState<GameListPage>
     );
   }
 
-  Widget _buildGameListView(
-    List<WordleGame> games,
-    String userId, {
-    required bool showActions,
-  }) {
+  Widget _buildGameListView(List<WordleGame> games, String userId,
+      {required bool showActions}) {
     if (games.isEmpty) {
       return const Center(
-          child: Text(
-        'No games here',
-        style: TextStyle(color: Colors.black),
-      ));
+        child: Text('No games here', style: TextStyle(color: Colors.black)),
+      );
     }
 
     return ListView.builder(
@@ -107,6 +103,8 @@ class _GameListPageState extends ConsumerState<GameListPage>
       itemBuilder: (context, index) {
         final game = games[index];
         final isLoading = _itemLoading[game.gameId] ?? false;
+        final isClickable = game.status != 'pending' &&
+            !isLoading; // ✅ Disable click for pending games
 
         return FutureBuilder<String>(
           future: ref
@@ -119,33 +117,37 @@ class _GameListPageState extends ConsumerState<GameListPage>
                 .read(gameListControllerProvider(userId).notifier)
                 .evaluateGuessBoxes(game.word, game.guesses);
 
-            return Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: const BoxDecoration(
-                gradient: appLinearGradient,
-                borderRadius: BorderRadius.all(Radius.circular(8)),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ListTile(
-                      title: Text(
-                        'Game from $senderName',
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Created: $formattedDate',
-                            style: const TextStyle(color: Colors.white70),
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: boxes
-                                .map((color) => Container(
+            return Opacity(
+              opacity: isClickable ? 1.0 : 0.6, // dim pending games slightly
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: const BoxDecoration(
+                  gradient: appLinearGradient,
+                  borderRadius: BorderRadius.all(Radius.circular(8)),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ListTile(
+                        enabled: isClickable,
+                        title: Text(
+                          'Game from $senderName',
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Created: $formattedDate',
+                              style: const TextStyle(color: Colors.white70),
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: boxes
+                                  .map(
+                                    (color) => Container(
                                       width: 16,
                                       height: 16,
                                       margin: const EdgeInsets.only(right: 4),
@@ -153,85 +155,89 @@ class _GameListPageState extends ConsumerState<GameListPage>
                                         color: color,
                                         borderRadius: BorderRadius.circular(3),
                                       ),
-                                    ))
-                                .toList(),
-                          ),
-                        ],
-                      ),
-                      trailing: Text(
-                        'Guess ${game.guesses.length}/6',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      onTap: () {
-                        if (isLoading) return;
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ProviderScope(
-                              overrides: [
-                                wordleGameControllerProvider.overrideWith(
-                                  (ref) => WordleGameController(ref),
-                                ),
-                              ],
-                              child: WordlePage(
-                                key: ValueKey(game.gameId),
-                                gameId: game.gameId,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    if (showActions && game.status == 'pending')
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8.0, bottom: 4.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _buildActionButton(
-                              icon: Icons.check,
-                              color: const Color.fromRGBO(255, 79, 64, 1),
-                              loading: isLoading,
-                              onPressed: () async {
-                                setState(
-                                    () => _itemLoading[game.gameId] = true);
-                                try {
-                                  await ref
-                                      .read(gameListControllerProvider(userId)
-                                          .notifier)
-                                      .acceptGame(game.gameId);
-                                } finally {
-                                  setState(
-                                      () => _itemLoading[game.gameId] = false);
-                                }
-                              },
-                            ),
-                            const SizedBox(width: 16),
-                            _buildActionButton(
-                              icon: Icons.cancel,
-                              color: const Color.fromRGBO(255, 68, 221, 1),
-                              loading: isLoading,
-                              onPressed: () async {
-                                setState(
-                                    () => _itemLoading[game.gameId] = true);
-                                try {
-                                  await ref
-                                      .read(gameListControllerProvider(userId)
-                                          .notifier)
-                                      .deleteGame(game.gameId);
-                                } finally {
-                                  setState(
-                                      () => _itemLoading[game.gameId] = false);
-                                }
-                              },
+                                    ),
+                                  )
+                                  .toList(),
                             ),
                           ],
                         ),
+                        trailing: Text(
+                          'Guess ${game.guesses.length}/6',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        onTap: isClickable
+                            ? () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ProviderScope(
+                                      overrides: [
+                                        wordleGameControllerProvider
+                                            .overrideWith(
+                                          (ref) => WordleGameController(ref),
+                                        ),
+                                      ],
+                                      child: WordlePage(
+                                        key: ValueKey(game.gameId),
+                                        gameId: game.gameId,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
+                            : null, // ✅ Disable navigation
                       ),
-                  ],
+                      if (showActions && game.status == 'pending')
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8.0, bottom: 4.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _buildActionButton(
+                                icon: Icons.check,
+                                color: const Color.fromRGBO(255, 79, 64, 1),
+                                loading: isLoading,
+                                onPressed: () async {
+                                  setState(
+                                      () => _itemLoading[game.gameId] = true);
+                                  try {
+                                    await ref
+                                        .read(gameListControllerProvider(userId)
+                                            .notifier)
+                                        .acceptGame(game.gameId);
+                                  } finally {
+                                    setState(() =>
+                                        _itemLoading[game.gameId] = false);
+                                  }
+                                },
+                              ),
+                              const SizedBox(width: 16),
+                              _buildActionButton(
+                                icon: Icons.cancel,
+                                color: const Color.fromRGBO(255, 68, 221, 1),
+                                loading: isLoading,
+                                onPressed: () async {
+                                  setState(
+                                      () => _itemLoading[game.gameId] = true);
+                                  try {
+                                    await ref
+                                        .read(gameListControllerProvider(userId)
+                                            .notifier)
+                                        .deleteGame(game.gameId);
+                                  } finally {
+                                    setState(() =>
+                                        _itemLoading[game.gameId] = false);
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             );
