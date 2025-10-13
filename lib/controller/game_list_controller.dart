@@ -58,6 +58,16 @@ class GameListController extends StateNotifier<AsyncValue<List<WordleGame>>> {
     return boxes;
   }
 
+  Future<void> refreshGames(String userId) async {
+    state = const AsyncLoading();
+
+    state = await AsyncValue.guard(() async {
+      final stream = _gameService.getGamesForUser(userId);
+      final games = await stream.first; // <-- get the first snapshot
+      return games;
+    });
+  }
+
   Future<void> acceptGame(String gameId) async {
     try {
       final success = await _gameService.acceptGame(gameId: gameId);

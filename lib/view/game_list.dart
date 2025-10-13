@@ -90,160 +90,185 @@ class _GameListPageState extends ConsumerState<GameListPage>
     );
   }
 
-  Widget _buildGameListView(List<WordleGame> games, String userId,
-      {required bool showActions}) {
+  Widget _buildGameListView(
+    List<WordleGame> games,
+    String userId, {
+    required bool showActions,
+  }) {
+    final gameListNotifier =
+        ref.read(gameListControllerProvider(userId).notifier);
+
+    Future<void> _refreshGames() async {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return;
+
+      await gameListNotifier.refreshGames(userId);
+    }
+
     if (games.isEmpty) {
-      return const Center(
-        child: Text('No games here', style: TextStyle(color: Colors.black)),
+      return RefreshIndicator(
+        backgroundColor: Colors.white,
+        color: const Color.fromRGBO(255, 79, 64, 1),
+        onRefresh: _refreshGames,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: const [
+            SizedBox(height: 200),
+            Center(child: Text('No games here')),
+          ],
+        ),
       );
     }
 
-    return ListView.builder(
-      itemCount: games.length,
-      itemBuilder: (context, index) {
-        final game = games[index];
-        final isLoading = _itemLoading[game.gameId] ?? false;
-        final isClickable = game.status != 'pending' &&
-            !isLoading; // ✅ Disable click for pending games
+    return RefreshIndicator(
+      backgroundColor: Colors.white,
+      color: const Color.fromRGBO(255, 79, 64, 1),
+      onRefresh: _refreshGames,
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: games.length,
+        itemBuilder: (context, index) {
+          final game = games[index];
+          final isLoading = _itemLoading[game.gameId] ?? false;
+          final isClickable =
+              game.status != 'pending' && !isLoading; // disable pending
 
-        return FutureBuilder<String>(
-          future: ref
-              .read(gameListControllerProvider(userId).notifier)
-              .getUsername(game.senderId),
-          builder: (context, snapshot) {
-            final senderName = snapshot.data ?? 'Loading...';
-            final formattedDate = DateFormat('dd/MM/yy').format(game.createdAt);
-            final boxes = ref
-                .read(gameListControllerProvider(userId).notifier)
-                .evaluateGuessBoxes(game.word, game.guesses);
+          return FutureBuilder<String>(
+            future: gameListNotifier.getUsername(game.senderId),
+            builder: (context, snapshot) {
+              final senderName = snapshot.data ?? 'Loading...';
+              final formattedDate =
+                  DateFormat('dd/MM/yy').format(game.createdAt);
+              final boxes =
+                  gameListNotifier.evaluateGuessBoxes(game.word, game.guesses);
 
-            return Opacity(
-              opacity: isClickable ? 1.0 : 0.6, // dim pending games slightly
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: const BoxDecoration(
-                  gradient: appLinearGradient,
-                  borderRadius: BorderRadius.all(Radius.circular(8)),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ListTile(
-                        enabled: isClickable,
-                        title: Text(
-                          'Game from $senderName',
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Created: $formattedDate',
-                              style: const TextStyle(color: Colors.white70),
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: boxes
-                                  .map(
-                                    (color) => Container(
-                                      width: 16,
-                                      height: 16,
-                                      margin: const EdgeInsets.only(right: 4),
-                                      decoration: BoxDecoration(
-                                        color: color,
-                                        borderRadius: BorderRadius.circular(3),
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
-                            ),
-                          ],
-                        ),
-                        trailing: Text(
-                          'Guess ${game.guesses.length}/6',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+              return Opacity(
+                opacity: isClickable ? 1.0 : 0.6,
+                child: Container(
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: const BoxDecoration(
+                    gradient: appLinearGradient,
+                    borderRadius: BorderRadius.all(Radius.circular(8)),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ListTile(
+                          enabled: isClickable,
+                          title: Text(
+                            'Game from $senderName',
+                            style: const TextStyle(color: Colors.white),
                           ),
-                        ),
-                        onTap: isClickable
-                            ? () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => ProviderScope(
-                                      overrides: [
-                                        wordleGameControllerProvider
-                                            .overrideWith(
-                                          (ref) => WordleGameController(ref),
-                                        ),
-                                      ],
-                                      child: WordlePage(
-                                        key: ValueKey(game.gameId),
-                                        gameId: game.gameId,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }
-                            : null, // ✅ Disable navigation
-                      ),
-                      if (showActions && game.status == 'pending')
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8.0, bottom: 4.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildActionButton(
-                                icon: Icons.check,
-                                color: const Color.fromRGBO(255, 79, 64, 1),
-                                loading: isLoading,
-                                onPressed: () async {
-                                  setState(
-                                      () => _itemLoading[game.gameId] = true);
-                                  try {
-                                    await ref
-                                        .read(gameListControllerProvider(userId)
-                                            .notifier)
-                                        .acceptGame(game.gameId);
-                                  } finally {
-                                    setState(() =>
-                                        _itemLoading[game.gameId] = false);
-                                  }
-                                },
+                              Text(
+                                'Created: $formattedDate',
+                                style: const TextStyle(color: Colors.white70),
                               ),
-                              const SizedBox(width: 16),
-                              _buildActionButton(
-                                icon: Icons.cancel,
-                                color: const Color.fromRGBO(255, 68, 221, 1),
-                                loading: isLoading,
-                                onPressed: () async {
-                                  setState(
-                                      () => _itemLoading[game.gameId] = true);
-                                  try {
-                                    await ref
-                                        .read(gameListControllerProvider(userId)
-                                            .notifier)
-                                        .deleteGame(game.gameId);
-                                  } finally {
-                                    setState(() =>
-                                        _itemLoading[game.gameId] = false);
-                                  }
-                                },
+                              const SizedBox(height: 4),
+                              Row(
+                                children: boxes
+                                    .map(
+                                      (color) => Container(
+                                        width: 16,
+                                        height: 16,
+                                        margin: const EdgeInsets.only(right: 4),
+                                        decoration: BoxDecoration(
+                                          color: color,
+                                          borderRadius:
+                                              BorderRadius.circular(3),
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
                               ),
                             ],
                           ),
+                          trailing: Text(
+                            'Guess ${game.guesses.length}/6',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          onTap: isClickable
+                              ? () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => ProviderScope(
+                                        overrides: [
+                                          wordleGameControllerProvider
+                                              .overrideWith(
+                                            (ref) => WordleGameController(ref),
+                                          ),
+                                        ],
+                                        child: WordlePage(
+                                          key: ValueKey(game.gameId),
+                                          gameId: game.gameId,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }
+                              : null,
                         ),
-                    ],
+                        if (showActions && game.status == 'pending')
+                          Padding(
+                            padding:
+                                const EdgeInsets.only(top: 8.0, bottom: 4.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                _buildActionButton(
+                                  icon: Icons.check,
+                                  color: const Color.fromRGBO(255, 79, 64, 1),
+                                  loading: isLoading,
+                                  onPressed: () async {
+                                    setState(
+                                        () => _itemLoading[game.gameId] = true);
+                                    try {
+                                      await gameListNotifier
+                                          .acceptGame(game.gameId);
+                                    } finally {
+                                      setState(() =>
+                                          _itemLoading[game.gameId] = false);
+                                    }
+                                  },
+                                ),
+                                const SizedBox(width: 16),
+                                _buildActionButton(
+                                  icon: Icons.cancel,
+                                  color: const Color.fromRGBO(255, 68, 221, 1),
+                                  loading: isLoading,
+                                  onPressed: () async {
+                                    setState(
+                                        () => _itemLoading[game.gameId] = true);
+                                    try {
+                                      await gameListNotifier
+                                          .deleteGame(game.gameId);
+                                    } finally {
+                                      setState(() =>
+                                          _itemLoading[game.gameId] = false);
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
-        );
-      },
+              );
+            },
+          );
+        },
+      ),
     );
   }
 
