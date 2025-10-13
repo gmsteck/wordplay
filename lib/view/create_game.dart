@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sample/provider/auth_provider.dart';
 import 'package:sample/provider/game_provider.dart';
 import 'package:sample/provider/word_list_provider.dart';
-import 'package:sample/service/word_list_service.dart';
 import 'package:sample/view/base_page.dart';
 
 class CreateGamePage extends ConsumerStatefulWidget {

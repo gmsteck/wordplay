@@ -63,34 +63,105 @@ class GameListPage extends ConsumerWidget {
                       gradient: appLinearGradient,
                       borderRadius: BorderRadius.all(Radius.circular(8)),
                     ),
-                    child: ListTile(
-                      title: Text('Game from $senderName',
-                          style: const TextStyle(color: Colors.white)),
-                      subtitle: Column(
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Created: $formattedDate',
-                              style: const TextStyle(color: Colors.white70)),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: boxes
-                                .map((color) => Container(
-                                      width: 16,
-                                      height: 16,
-                                      margin: const EdgeInsets.only(right: 4),
-                                      decoration: BoxDecoration(
-                                        color: color,
-                                        borderRadius: BorderRadius.circular(3),
-                                      ),
-                                    ))
-                                .toList(),
+                          ListTile(
+                            title: Text(
+                              'Game from $senderName',
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Created: $formattedDate',
+                                  style: const TextStyle(color: Colors.white70),
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: boxes
+                                      .map((color) => Container(
+                                            width: 16,
+                                            height: 16,
+                                            margin:
+                                                const EdgeInsets.only(right: 4),
+                                            decoration: BoxDecoration(
+                                              color: color,
+                                              borderRadius:
+                                                  BorderRadius.circular(3),
+                                            ),
+                                          ))
+                                      .toList(),
+                                ),
+                              ],
+                            ),
+                            trailing: Text(
+                              'Guess ${game.guesses.length}/6',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      WordlePage(gameId: game.gameId),
+                                ),
+                              );
+                            },
                           ),
+                          if (game.status == 'pending')
+                            Padding(
+                              padding:
+                                  const EdgeInsets.only(top: 8.0, bottom: 4.0),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  // ✅ Accept Button
+                                  ElevatedButton(
+                                    onPressed: () async {
+                                      await ref
+                                          .read(
+                                              gameListControllerProvider(userId)
+                                                  .notifier)
+                                          .acceptGame(game.gameId);
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green,
+                                      shape: const CircleBorder(),
+                                      padding: const EdgeInsets.all(12),
+                                    ),
+                                    child: const Icon(Icons.check,
+                                        color: Colors.white),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  // 🗑 Delete Button
+                                  ElevatedButton(
+                                    onPressed: () async {
+                                      await ref
+                                          .read(
+                                              gameListControllerProvider(userId)
+                                                  .notifier)
+                                          .deleteGame(game.gameId);
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.red,
+                                      shape: const CircleBorder(),
+                                      padding: const EdgeInsets.all(12),
+                                    ),
+                                    child: const Icon(Icons.delete,
+                                        color: Colors.white),
+                                  ),
+                                ],
+                              ),
+                            ),
                         ],
                       ),
-                      trailing: Text('Guess ${game.guesses.length}/6',
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold)),
                     ),
                   ),
                 );

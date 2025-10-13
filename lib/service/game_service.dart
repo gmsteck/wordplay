@@ -49,6 +49,12 @@ class WordleGameService {
     return result.data['success'] as bool;
   }
 
+  Future<bool> deleteGame({required String gameId}) async {
+    final callable = functions.httpsCallable('deleteGame');
+    final result = await callable.call({'gameId': gameId});
+    return result.data['success'] as bool;
+  }
+
   Future<Map<String, dynamic>> submitGuess({
     required String gameId,
     required String guess,

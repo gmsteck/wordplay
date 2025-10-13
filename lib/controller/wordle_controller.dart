@@ -62,6 +62,7 @@ class WordleGameController extends StateNotifier<WordleGameState> {
 
   Future<void> submitGuess(String gameId, String guess) async {
     try {
+      state = state.copyWith(game: state.game, isLoading: true);
       final result = await _service.submitGuess(gameId: gameId, guess: guess);
       final updatedGame = state.game?.copyWith(
         guesses: List<String>.from(result['guesses']),

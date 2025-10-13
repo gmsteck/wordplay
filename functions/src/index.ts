@@ -100,6 +100,35 @@ export const acceptGame = onCall(async (event) => {
 });
 
 /**
+ * Accept a game invitation (start the game)
+ */
+export const deleteGame = onCall(async (event) => {
+  const { auth, data } = event;
+  if (!auth?.uid)
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "Must be logged in"
+    );
+
+  const { gameId } = data;
+  const gameRef = db.collection("games").doc(gameId);
+  const gameSnap = await gameRef.get();
+
+  if (!gameSnap.exists) {
+    throw new functions.https.HttpsError("not-found", "Game not found");
+  }
+
+  const game = gameSnap.data() as WordleGame;
+  if (game.receiverId !== auth.uid) {
+    throw new functions.https.HttpsError("permission-denied", "Not your game");
+  }
+
+  await gameRef.delete();
+
+  return { success: true };
+});
+
+/**
  * Submit a guess
  */
 export const submitGuess = onCall(async (event) => {

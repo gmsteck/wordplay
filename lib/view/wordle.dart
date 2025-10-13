@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sample/common/gradient_app_bar.dart';
 import 'package:sample/controller/wordle_controller.dart';
 import 'package:sample/provider/word_list_provider.dart';
+import 'package:sample/view/game_result.dart';
 import 'package:sample/view/shake_widget.dart';
 
 class WordlePage extends ConsumerStatefulWidget {
@@ -16,6 +17,7 @@ class WordlePage extends ConsumerStatefulWidget {
 class _WordlePageState extends ConsumerState<WordlePage> {
   final GlobalKey<ShakeWidgetState> shakeKey = GlobalKey<ShakeWidgetState>();
   String currentGuess = '';
+  bool _resultShown = false;
 
   @override
   void initState() {
@@ -26,6 +28,9 @@ class _WordlePageState extends ConsumerState<WordlePage> {
   }
 
   void onKeyPressed(String letter) {
+    final game = ref.read(wordleGameControllerProvider).game;
+    if (game == null || game.status == 'won' || game.status == 'lost')
+      return; // disable input
     if (currentGuess.length >= 5) return;
     setState(() {
       currentGuess += letter.toLowerCase();
@@ -33,6 +38,8 @@ class _WordlePageState extends ConsumerState<WordlePage> {
   }
 
   void onBackspace() {
+    final game = ref.read(wordleGameControllerProvider).game;
+    if (game == null || game.status == 'won' || game.status == 'lost') return;
     if (currentGuess.isEmpty) return;
     setState(() {
       currentGuess = currentGuess.substring(0, currentGuess.length - 1);
@@ -43,6 +50,11 @@ class _WordlePageState extends ConsumerState<WordlePage> {
     final state = ref.watch(wordleGameControllerProvider);
     final controller = ref.read(wordleGameControllerProvider.notifier);
     final validator = ref.read(wordValidationServiceProvider);
+
+    final game = state.game;
+    if (game == null || game.status == 'won' || game.status == 'lost')
+      return; // disable input
+
     if (state.game?.status == 'pending') {
       await controller.acceptGame(widget.gameId);
     }
@@ -61,6 +73,10 @@ class _WordlePageState extends ConsumerState<WordlePage> {
   Widget build(BuildContext context) {
     final state = ref.watch(wordleGameControllerProvider);
     final game = state.game;
+
+    if (game != null && _resultShown && (game.status == 'in_progress')) {
+      _resultShown = false;
+    }
 
     if (state.error != null) {
       return Scaffold(
@@ -90,6 +106,36 @@ class _WordlePageState extends ConsumerState<WordlePage> {
         appBar: const GradientAppBar(title: 'Wordle'),
         body: const Center(child: Text('No game data')),
       );
+    }
+
+    if (!_resultShown && (game.status == 'won' || game.status == 'lost')) {
+      _resultShown = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24), // smoother corners
+            ),
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal:
+                  32, // controls how wide it is (smaller padding = wider)
+              vertical: 24,
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: 500, // limit max width for large screens
+              ),
+              child: GameResultView(
+                title: game.status == 'won' ? 'You Won!' : 'You Lost',
+                word: game.word,
+                guesses: game.guesses,
+              ),
+            ),
+          ),
+        );
+      });
     }
 
     Widget buildGuessRow(String guess) {
@@ -260,9 +306,16 @@ class _WordlePageState extends ConsumerState<WordlePage> {
             children: [
               const SizedBox(height: 16),
               ...game.guesses.map(buildGuessRow),
-              if (game.guesses.length < 6) buildEmptyRow(currentGuess),
+              if (game.status == 'in_progress' && game.guesses.length < 6)
+                buildEmptyRow(currentGuess),
               const Spacer(),
-              buildKeyboard(),
+              Opacity(
+                opacity: game.status == 'in_progress' ? 1.0 : 0.3,
+                child: IgnorePointer(
+                  ignoring: game.status != 'in_progress',
+                  child: buildKeyboard(),
+                ),
+              ),
               const SizedBox(height: 16),
             ],
           ),
