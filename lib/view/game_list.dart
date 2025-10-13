@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:sample/common/theme.dart';
+import 'package:sample/controller/wordle_controller.dart';
 import 'package:sample/provider/game_list_provider.dart';
 import 'package:sample/view/base_page.dart';
 import 'package:sample/view/wordle.dart';
@@ -107,12 +108,20 @@ class GameListPage extends ConsumerWidget {
                             ),
                             onTap: () {
                               Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      WordlePage(gameId: game.gameId),
-                                ),
-                              );
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) => ProviderScope(
+                                            overrides: [
+                                              wordleGameControllerProvider
+                                                  .overrideWith(
+                                                (ref) => WordleGameController(
+                                                    ref), // fresh controller
+                                              ),
+                                            ],
+                                            child: WordlePage(
+                                                key: ValueKey(game.gameId),
+                                                gameId: game.gameId),
+                                          )));
                             },
                           ),
                           if (game.status == 'pending')
@@ -132,12 +141,12 @@ class GameListPage extends ConsumerWidget {
                                           .acceptGame(game.gameId);
                                     },
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.green,
+                                      backgroundColor: Colors.white,
                                       shape: const CircleBorder(),
                                       padding: const EdgeInsets.all(12),
                                     ),
                                     child: const Icon(Icons.check,
-                                        color: Colors.white),
+                                        color: Color.fromRGBO(255, 79, 64, 1)),
                                   ),
                                   const SizedBox(width: 16),
                                   // 🗑 Delete Button
@@ -150,12 +159,12 @@ class GameListPage extends ConsumerWidget {
                                           .deleteGame(game.gameId);
                                     },
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.red,
+                                      backgroundColor: Colors.white,
                                       shape: const CircleBorder(),
                                       padding: const EdgeInsets.all(12),
                                     ),
-                                    child: const Icon(Icons.delete,
-                                        color: Colors.white),
+                                    child: const Icon(Icons.cancel,
+                                        color: Color.fromRGBO(255, 68, 221, 1)),
                                   ),
                                 ],
                               ),

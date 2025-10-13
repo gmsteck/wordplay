@@ -108,7 +108,7 @@ class _WordlePageState extends ConsumerState<WordlePage> {
       );
     }
 
-    if (!_resultShown && (game.status == 'won' || game.status == 'lost')) {
+    if (game.status == 'won' || game.status == 'lost') {
       _resultShown = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         showDialog(

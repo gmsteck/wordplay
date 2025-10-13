@@ -32,7 +32,14 @@ class WordleGameState {
 class WordleGameController extends StateNotifier<WordleGameState> {
   final WordleGameService _service;
 
-  WordleGameController(this._service) : super(WordleGameState());
+  WordleGameController(
+      StateNotifierProviderRef<WordleGameController, WordleGameState> ref)
+      : _service = ref.read(wordleGameServiceProvider),
+        super(WordleGameState());
+
+  void clearGame() {
+    state = WordleGameState();
+  }
 
   Future<void> loadGame(String gameId) async {
     try {
@@ -161,6 +168,5 @@ extension WordleGameCopyWith on WordleGame {
 // Provider for the controller, depends on WordleGameService provider
 final wordleGameControllerProvider =
     StateNotifierProvider<WordleGameController, WordleGameState>((ref) {
-  final service = ref.read(wordleGameServiceProvider);
-  return WordleGameController(service);
+  return WordleGameController(ref);
 });

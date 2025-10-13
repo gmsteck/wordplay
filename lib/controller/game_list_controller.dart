@@ -45,17 +45,13 @@ class GameListController extends StateNotifier<AsyncValue<List<WordleGame>>> {
   Future<String> getUsername(String senderId) => _getUsername(senderId);
 
   List<Color> evaluateGuessBoxes(String word, List<String> guesses) {
-    final List<Color> boxes = List.filled(5, Colors.black);
-    for (int i = 0; i < guesses.length && i < 5; i++) {
+    final List<Color> boxes = List.filled(5, Colors.grey.shade100);
+    for (int i = 0; i < guesses.length; i++) {
       final guess = guesses[i];
       for (int j = 0; j < guess.length && j < 5; j++) {
         final letter = guess[j].toLowerCase();
-        if (word.contains(letter)) {
+        if (word[j] == letter) {
           boxes[j] = Colors.green;
-        } else if (guesses.any((g) => g.contains(letter))) {
-          boxes[j] = Colors.yellow.shade700;
-        } else {
-          boxes[j] = Colors.black;
         }
       }
     }
