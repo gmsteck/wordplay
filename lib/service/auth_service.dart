@@ -1,9 +1,13 @@
 // services/auth_service.dart
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sample/provider/user_provider.dart';
 import '../model/user_model.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final Ref ref;
+  AuthService(this.ref);
 
   Future<UserModel?> login(
       {required String email, required String password}) async {
@@ -14,6 +18,8 @@ class AuthService {
       );
       final user = credential.user;
       if (user == null) return null;
+
+      //get friends
 
       return UserModel(
         id: user.uid,
@@ -37,11 +43,15 @@ class AuthService {
       );
       final user = credential.user;
       if (user == null) return null;
+      final tempName = user.email ?? 'Unknown';
+      await ref
+          .read(userServiceProvider)
+          .createUserInFirebase(tempName, user.email!);
 
       return UserModel(
         id: user.uid,
         pictureUrl: Uri(),
-        name: user.displayName ?? 'Unknown',
+        name: tempName,
         email: user.email ?? 'no-email@example.com',
         createdAt: user.metadata.creationTime ?? DateTime.now(),
         lastUpdated: user.metadata.creationTime ?? DateTime.now(),

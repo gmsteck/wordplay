@@ -6,7 +6,7 @@ import '../service/auth_service.dart';
 
 // Provide AuthService (now using FirebaseAuth internally)
 final authServiceProvider = Provider<AuthService>((ref) {
-  return AuthService();
+  return AuthService(ref);
 });
 
 // Provide AuthController, which depends on AuthService

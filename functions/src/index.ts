@@ -215,6 +215,103 @@ export const getGameState = onCall(async (event) => {
 });
 
 /**
+ * Get the user by id
+ */
+
+export const getUserById = functions.https.onCall(async (event) => {
+  const { auth, data } = event;
+
+  // Ensure the caller is authenticated
+  if (!auth?.uid) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "Must be logged in"
+    );
+  }
+
+  const { userId } = data;
+
+  if (!userId) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Missing userId parameter"
+    );
+  }
+
+  try {
+    const userDoc = await db.collection("user").doc(userId).get();
+
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError("not-found", "User not found");
+    }
+
+    const userData = userDoc.data();
+
+    // You can sanitize sensitive fields here if needed
+    return {
+      id: userDoc.id,
+      ...userData,
+    };
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    throw new functions.https.HttpsError(
+      "internal",
+      "Failed to fetch user data"
+    );
+  }
+});
+
+export const createUser = functions.https.onCall(async (event) => {
+  const { auth, data } = event;
+
+  if (!auth?.uid) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "You must be logged in to create a user."
+    );
+  }
+
+  const { name, email, pictureUrl, friends } = data;
+
+  if (!name || !email) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Missing required fields: name and email."
+    );
+  }
+
+  const userId = auth.uid;
+
+  const userRef = db.collection("user").doc(userId);
+  const existing = await userRef.get();
+
+  if (existing.exists) {
+    throw new functions.https.HttpsError(
+      "already-exists",
+      "A user with this ID already exists."
+    );
+  }
+
+  const now = admin.firestore.Timestamp.now();
+
+  const userData = {
+    name,
+    email,
+    pictureUrl: pictureUrl ?? null,
+    friends: Array.isArray(friends) ? friends : [],
+    createdAt: now,
+    lastUpdated: now,
+  };
+
+  await userRef.set(userData);
+
+  return {
+    id: userId,
+    ...userData,
+  };
+});
+
+/**
  * Delete old games (scheduled function)
  */
 // export const cleanupOldGames = functions.pubsub
