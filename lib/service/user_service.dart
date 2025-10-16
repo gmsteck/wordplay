@@ -30,4 +30,18 @@ class UserService {
       'pictureUrl': pictureUrl,
     });
   }
+
+  Future<void> updateUsername(String userId, String newName) async {
+    try {
+      final callable = functions.httpsCallable('updateUsername');
+      await callable.call({
+        'userId': userId,
+        'newName': newName,
+      });
+    } on FirebaseFunctionsException catch (e) {
+      throw Exception('Firebase function error: ${e.message}');
+    } catch (e) {
+      throw Exception('Failed to update username: $e');
+    }
+  }
 }

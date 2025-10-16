@@ -42,6 +42,12 @@ class GameListController extends StateNotifier<AsyncValue<List<WordleGame>>> {
     }
   }
 
+  void updateUsernameCache(String uid, String newName) {
+    _usernameCache[uid] = newName;
+    // Trigger UI rebuild
+    state = AsyncValue.data(state.value ?? []);
+  }
+
   Future<String> getUsername(String senderId) => _getUsername(senderId);
 
   List<Color> evaluateGuessBoxes(String word, List<String> guesses) {

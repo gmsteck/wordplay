@@ -311,6 +311,40 @@ export const createUser = functions.https.onCall(async (event) => {
   };
 });
 
+export const updateUsername = functions.https.onCall(async (event) => {
+  const { auth, data } = event;
+
+  if (!auth?.uid) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "You must be logged in to create a user."
+    );
+  }
+
+  const { userId, newName } = data;
+
+  if (!userId || !newName) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Missing required fields: name and email."
+    );
+  }
+
+  const userRef = db.collection("user").doc(userId);
+  const userSnap = await userRef.get();
+
+  if (!userSnap.exists) {
+    throw new functions.https.HttpsError("not-found", "User not found");
+  }
+
+  await userRef.update({
+    name: newName,
+    lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  return { success: true };
+});
+
 /**
  * Delete old games (scheduled function)
  */
