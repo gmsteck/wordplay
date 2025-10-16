@@ -38,6 +38,11 @@ class BasePage extends ConsumerWidget {
                     onPressed: () => _navigateIfNeeded(ref, '/game_list'),
                   ),
                   _BottomNavIcon(
+                    icon: Icons.people,
+                    tooltip: 'Friends',
+                    onPressed: () => _navigateIfNeeded(ref, '/friends'),
+                  ),
+                  _BottomNavIcon(
                     icon: Icons.gamepad,
                     tooltip: 'Create Game',
                     onPressed: () => _navigateIfNeeded(ref, '/create_game'),

@@ -345,6 +345,47 @@ export const updateUsername = functions.https.onCall(async (event) => {
   return { success: true };
 });
 
+export const getFriendsByUserId = functions.https.onCall(async (event) => {
+  const { auth, data } = event;
+
+  // Verify authentication
+  if (!auth?.uid) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "You must be logged in to call this function."
+    );
+  }
+
+  const { userId } = data;
+
+  // Fetch the user document
+  const userDoc = await db.collection("user").doc(userId).get();
+  if (!userDoc.exists) {
+    throw new functions.https.HttpsError("not-found", "User not found");
+  }
+
+  const userData = userDoc.data();
+  const friendsIds: string[] = userData?.friends || [];
+
+  if (friendsIds.length === 0) {
+    return [];
+  }
+
+  // Fetch friend documents in parallel
+  const friendsSnapshots = await db
+    .collection("user")
+    .where(admin.firestore.FieldPath.documentId(), "in", friendsIds)
+    .get();
+
+  // Map Firestore docs to a serializable list
+  const friends = friendsSnapshots.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+
+  return friends;
+});
+
 /**
  * Delete old games (scheduled function)
  */

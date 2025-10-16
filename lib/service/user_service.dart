@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:sample/model/user_model.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
@@ -42,6 +43,28 @@ class UserService {
       throw Exception('Firebase function error: ${e.message}');
     } catch (e) {
       throw Exception('Failed to update username: $e');
+    }
+  }
+
+  final _db = FirebaseFirestore.instance;
+
+  Future<List<UserModel>> getFriends(String userId) async {
+    try {
+      final callable = functions.httpsCallable('getFriendsByUserId');
+      final result = await callable.call({'userId': userId});
+
+      final List<dynamic> data = result.data as List<dynamic>;
+
+      return data
+          .map((friend) => UserModel.fromMap(
+                friend['id'] as String,
+                Map<String, dynamic>.from(friend),
+              ))
+          .toList();
+    } on FirebaseFunctionsException catch (e) {
+      throw Exception('Firebase function error: ${e.message}');
+    } catch (e) {
+      throw Exception('Failed to fetch friends: $e');
     }
   }
 }
